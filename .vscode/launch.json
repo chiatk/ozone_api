@@ -5,12 +5,23 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "run_web_server",
+            "type": "python",
+            "request": "launch",
+            "program": "run_web_server.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "Python: FastAPI",
             "type": "python",
             "request": "launch",
             "module": "uvicorn",
             "args": [
-                "openapi:app"
+                "openapi:app",
+                "--reload",
+                "--port",
+                "8000"
             ],
             "jinja": true,
             "justMyCode": true

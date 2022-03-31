@@ -1,6 +1,6 @@
 import os
 import json
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Tuple
 import logzero
 from logzero import logger
 from fastapi import FastAPI, APIRouter, Request, Body, Depends, HTTPException
@@ -11,6 +11,7 @@ from chia.rpc.full_node_rpc_client import FullNodeRpcClient
 from chia.util.bech32m import encode_puzzle_hash, decode_puzzle_hash as inner_decode_puzzle_hash
 from chia.types.spend_bundle import SpendBundle
 from chia.types.coin_spend import CoinSpend
+from chia_sync import ChiaSync
 import config as settings
 from chia.util.byte_types import hexstr_to_bytes
 from chia.types.coin_record import CoinRecord
@@ -40,8 +41,10 @@ async def get_full_node_client() -> FullNodeRpcClient:
 @app.on_event("startup")
 async def startup():
     app.state.client = await get_full_node_client()
-    # check full node connect
+   
     await app.state.client.get_blockchain_state()
+
+    ChiaSync.start(app.state.client)
 
 
 @app.on_event("shutdown")
@@ -93,13 +96,13 @@ async def get_utxos(address: str, request: Request):
     print(data)
     return data
 
-@router.post("/get_cat_coins_by_outer_puzzle_hashes", response_model=List)
-@cached(ttl=10, key_builder=lambda *args, **kwargs: f"utxos:", alias='default')
+@router.post("/get_cat_coins_by_outer_puzzle_hashes", response_model=dict)
+@cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_cat_coins_by_outer_puzzle_hashes:{kwargs['item']}", alias='default')
 async def get_utxos(  request: Request, item=Body({}),):
     # todo: use blocke indexer and supoort unconfirmed param
 
     start_height: Optional[int] = None
-    end_height: Optional[int] = None
+    end_height: Optional[int] = ChiaSync.peak()
     include_spent_coins = False
 
     if 'start_height' in item:
@@ -112,24 +115,82 @@ async def get_utxos(  request: Request, item=Body({}),):
         include_spent_coins = bool(item['include_spent_coins'])
 
 
-    puzzle_hashes = []
+    puzzle_hashes:List[Tuple[bytes32, int]] = []
     for puzzle_hash_hex in item['puzzle_hashes']:
-        puzzle_hashes.append(bytes32(bytes.fromhex(puzzle_hash_hex)))
+        touple_item :Tuple[bytes32, int] = (bytes32(bytes.fromhex(puzzle_hash_hex[0])), int(puzzle_hash_hex[1]))
+        puzzle_hashes.append(touple_item)
+
     full_node_client = request.app.state.client
-    coin_records:List[CoinRecord] = await full_node_client.get_coin_records_by_puzzle_hashes(puzzle_hashes=puzzle_hashes,\
-         include_spent_coins=include_spent_coins, end_height=end_height, start_height=start_height)
+    coin_records:List[CoinRecord] = []
+    for puzzle_hash_item in puzzle_hashes:
+        try:
+            puzzle_hash, start_height = puzzle_hash_item
+            if start_height == 0:
+                start_height = 32
+            #start_height = 32
+            records = await full_node_client.get_coin_records_by_puzzle_hash(puzzle_hash=puzzle_hash,\
+            include_spent_coins=include_spent_coins,   start_height=start_height-32)
+            for r in records:
+                coin_records.append(r)
+           
+        except Exception as e:
+
+            print(e)
+            print(f"puzzle_hash: {puzzle_hash_item}")
+            continue
     
     result = []
 
     for row in coin_records:
-        if row.spent and include_spent_coins == False:
-            continue
-        else:
-            parent_coin: Optional[CoinRecord] = await full_node_client.get_coin_record_by_name(row.coin.parent_coin_info)
-            parent_coin_spend: Optional[CoinSpend] = await full_node_client.get_puzzle_and_solution(parent_coin.name, parent_coin.spent_block_index)
-            result.append([row.to_json_dict(), parent_coin_spend.to_json_dict()])       
+        try:
+            if row.spent and include_spent_coins == False:
+                continue
+            else:
+                parent_coin: Optional[CoinRecord] = await full_node_client.get_coin_record_by_name(row.coin.parent_coin_info)
+                if parent_coin is None:
+                    result.append([row.to_json_dict(), None]) 
+                    continue
+                parent_coin_spend: Optional[CoinSpend] = await full_node_client.get_puzzle_and_solution(parent_coin.name, parent_coin.spent_block_index)
+                result.append([row.to_json_dict(), parent_coin_spend.to_json_dict()])      
+
+        except Exception as e:
+
+            print(e)
+            print(f"puzzle_hash: {puzzle_hash_item}")
+            continue 
  
-    return result
+    return {"coins":result, "end_height": end_height} 
+
+
+
+@router.post("/get_coin_state", response_model=dict)
+#@cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_cat_coins_by_outer_puzzle_hashes:{kwargs['item']}", alias='default')
+async def get_utxos(  request: Request, item=Body({}),):
+    # todo: use blocke indexer and supoort unconfirmed param
+ 
+  
+
+    names:List[bytes32] = []
+    for puzzle_hash_hex in item['coins']:
+        coin_name  = bytes32(bytes.fromhex(puzzle_hash_hex))
+        names.append(coin_name)
+
+    full_node_client = request.app.state.client
+    result = []
+    for name in names:
+        try:
+             
+             
+            records = await full_node_client.get_coin_record_by_name(coin_id=name )
+            result.append(records.to_json_dict())
+           
+        except Exception as e:
+
+            print(e)
+            print(f"puzzle_hash: {name}")
+            continue
+     
+    return {"coins":result } 
 
 
 
