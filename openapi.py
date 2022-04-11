@@ -99,7 +99,7 @@ async def get_utxos(address: str, request: Request):
 
 
 @router.get("/tokens", response_model=List[CatData])
-@cached(ttl=10, key_builder=lambda *args, **kwargs: f"utxos: ", alias='default')
+@cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_tokens: ", alias='default')
 async def get_tokens(  request: Request):
     # todo: use blocke indexer and supoort unconfirmed param
      
