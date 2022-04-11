@@ -67,7 +67,7 @@ class ChiaSync:
                             if "chialisp" in t:
                                 chialisp = t["chialisp"]
                             if "logo_url" in t:
-                                chialisp = t["logo_url"]
+                                logo_url = t["logo_url"]
                             if "multiplier" in t:
                                 multiplier = t["multiplier"]
 

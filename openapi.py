@@ -101,8 +101,7 @@ async def get_utxos(address: str, request: Request):
 @router.get("/tokens", response_model=List[CatData])
 @cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_tokens: ", alias='default')
 async def get_tokens(  request: Request):
-    # todo: use blocke indexer and supoort unconfirmed param
-     
+    
     return ChiaSync.tokens_list
 
 @router.post("/get_cat_coins_by_outer_puzzle_hashes", response_model=dict)
