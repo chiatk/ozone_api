@@ -158,7 +158,7 @@ async def get_utxos(  request: Request, item=Body({}),):
             print(e)
             print(f"puzzle_hash: {puzzle_hash_item}")
             continue 
- 
+    print(f"coins size: {len(coin_records)}")
     return {"coins":result, "end_height": end_height} 
 
 
