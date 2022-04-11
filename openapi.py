@@ -11,6 +11,7 @@ from chia.rpc.full_node_rpc_client import FullNodeRpcClient
 from chia.util.bech32m import encode_puzzle_hash, decode_puzzle_hash as inner_decode_puzzle_hash
 from chia.types.spend_bundle import SpendBundle
 from chia.types.coin_spend import CoinSpend
+from cat_data import CatData
 from chia_sync import ChiaSync
 import config as settings
 from chia.util.byte_types import hexstr_to_bytes
@@ -95,6 +96,14 @@ async def get_utxos(address: str, request: Request):
         data.append(coin_to_json(row.coin))
     print(data)
     return data
+
+
+@router.get("/tokens", response_model=List[CatData])
+@cached(ttl=10, key_builder=lambda *args, **kwargs: f"utxos: ", alias='default')
+async def get_tokens(  request: Request):
+    # todo: use blocke indexer and supoort unconfirmed param
+     
+    return ChiaSync.tokens_list
 
 @router.post("/get_cat_coins_by_outer_puzzle_hashes", response_model=dict)
 @cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_cat_coins_by_outer_puzzle_hashes:{kwargs['item']}", alias='default')
