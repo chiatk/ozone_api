@@ -62,6 +62,7 @@ class ChiaSync:
                             logo_url = None
                             chialisp = None
                             multiplier = None
+                            category = None
                             if "clvm" in t:
                                 clvm = t["clvm"]
                             if "chialisp" in t:
@@ -70,9 +71,12 @@ class ChiaSync:
                                 logo_url = t["logo_url"]
                             if "multiplier" in t:
                                 multiplier = t["multiplier"]
+                            if "category" in t:
+                                category = t["category"]
+                            
 
                             cat_data = CatData(hash=t["hash"], code=t["code"], name=t["name"],\
-                               description=t["description"], multiplier=multiplier, \
+                               description=t["description"], multiplier=multiplier, category=category, \
                                   supply=t["supply"], hashgreen_price=t["hashgreen_price"],\
                                        hashgreen_marketcap=t["hashgreen_marketcap"], clvm=clvm,\
                                             chialisp=chialisp, logo_url=logo_url, \
