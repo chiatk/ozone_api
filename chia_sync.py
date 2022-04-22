@@ -63,10 +63,10 @@ class ChiaSync:
                             chialisp = None
                             multiplier = None
                             category = None
-                            if "clvm" in t:
-                                clvm = t["clvm"]
-                            if "chialisp" in t:
-                                chialisp = t["chialisp"]
+                            # if "clvm" in t:
+                            #     clvm = t["clvm"]
+                            # if "chialisp" in t:
+                            #     chialisp = t["chialisp"]
                             if "logo_url" in t:
                                 logo_url = t["logo_url"]
                             if "multiplier" in t:
