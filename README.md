@@ -1,15 +1,15 @@
-# openapi
+# Ozone Wallet
 
-DeFi wallet on Chia Network.
+Multiplatform Chia Wallet
 
 ## Install
 
-You can install Goby [here](https://chrome.google.com/webstore/detail/goby/jnkelfanjkeadonecabehalmbgpfodjm).
+You can install Ozone [here](https://ozonewallet.io/).
 
 ## Run your own node
 
 ```
-git clone https://github.com/GobyWallet/openapi.git
+git clone https://github.com/MarvinQuevedo/ozone_api
 # change config.py
 
 pip install -r requirements.txt
@@ -18,6 +18,4 @@ uvicorn openapi:app
 
 ## Thanks
 
-Thanks to the contributions of [Chia Mine](https://github.com/Chia-Mine/clvm-js), MetaMask, and DeBank to crypto, we stand on your shoulders to complete this project. (🌱, 🌱)
-
-Also, thanks to Catcoin for the token list.
+Thanks to the contributions of [Goby Open API](https://github.com/GobyWallet/openapi)
