@@ -13,7 +13,7 @@ git clone https://github.com/MarvinQuevedo/ozone_api
 # change config.py
 
 pip install -r requirements.txt
-uvicorn openapi:app
+python run_web_server.py
 ```
 
 ## Thanks
