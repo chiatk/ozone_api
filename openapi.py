@@ -203,6 +203,10 @@ async def get_utxos(  request: Request, item=Body({}),):
              
              
             records = await full_node_client.get_coin_record_by_name(coin_id=name )
+            if records is None:
+                logger.debug(f"not Found coin: {name}")
+                
+                continue
             result.append(records.to_json_dict())
            
         except Exception as e:
