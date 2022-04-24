@@ -122,7 +122,7 @@ async def get_utxos(  request: Request, item=Body({}),):
     if 'include_spent_coins' in item:
         include_spent_coins = bool(item['include_spent_coins'])
 
-
+    print(f"len(item['puzzle_hashes']): {len(item['puzzle_hashes'])}")
     puzzle_hashes:List[Tuple[bytes32, int]] = []
     for puzzle_hash_hex in item['puzzle_hashes']:
         touple_item :Tuple[bytes32, int] = (bytes32(bytes.fromhex(puzzle_hash_hex[0])), int(puzzle_hash_hex[1]))
