@@ -94,7 +94,7 @@ async def get_utxos(address: str, request: Request):
         if row.spent:
             continue
         data.append(coin_to_json(row.coin))
-    print(data)
+   
     return data
 
 
@@ -121,8 +121,10 @@ async def get_utxos(  request: Request, item=Body({}),):
     
     if 'include_spent_coins' in item:
         include_spent_coins = bool(item['include_spent_coins'])
+    
+    logger.debug(f"start_height: {start_height} end_height: {end_height} include_spent_coins: {include_spent_coins}")
+    logger.debug(f"item len: {len(item)}") 
 
-    print(f"len(item['puzzle_hashes']): {len(item['puzzle_hashes'])}")
     puzzle_hashes:List[Tuple[bytes32, int]] = []
     for puzzle_hash_hex in item['puzzle_hashes']:
         touple_item :Tuple[bytes32, int] = (bytes32(bytes.fromhex(puzzle_hash_hex[0])), int(puzzle_hash_hex[1]))
@@ -142,7 +144,7 @@ async def get_utxos(  request: Request, item=Body({}),):
                 coin_records.append(r)
            
         except Exception as e:
-
+            logger.exception(e)
             print(e)
             print(f"puzzle_hash: {puzzle_hash_item}")
             continue
@@ -171,6 +173,7 @@ async def get_utxos(  request: Request, item=Body({}),):
                 result.append([row.to_json_dict(), parent_coin_spend.to_json_dict()])      
 
         except Exception as e:
+            logger.exception(e)
             print(row)
             print(e)
             print(traceback.format_exc())
@@ -203,7 +206,8 @@ async def get_utxos(  request: Request, item=Body({}),):
             result.append(records.to_json_dict())
            
         except Exception as e:
-
+            logger.exception(e)
+            print(traceback.format_exc())
             print(e)
             print(f"puzzle_hash: {name}")
             continue
