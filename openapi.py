@@ -17,7 +17,7 @@ import config as settings
 from chia.util.byte_types import hexstr_to_bytes
 from chia.types.coin_record import CoinRecord
 from chia.types.blockchain_format.sized_bytes import bytes32
-
+import traceback
 caches.set_config(settings.CACHE_CONFIG)
 
 app = FastAPI()
@@ -173,6 +173,7 @@ async def get_utxos(  request: Request, item=Body({}),):
         except Exception as e:
             print(row)
             print(e)
+            print(traceback.format_exc())
            
             continue 
     print(f"coins size: {len(coin_records)}")
