@@ -2,7 +2,8 @@ import asyncio
 from lib2to3.pgen2.token import OP
 from optparse import Option
 import os
-import json 
+import json
+import time 
 from typing import List, Optional, Dict
 import requests
 from logzero import logger
@@ -21,32 +22,51 @@ from chia.util.byte_types import hexstr_to_bytes
 from chia.types.coin_record import CoinRecord
 from chia.types.blockchain_format.sized_bytes import bytes32
 
+WAIT_TIME = 5
+
 
 class ChiaSync:
     blockchain_state: Dict = {}
     node_rpc_client: Optional[FullNodeRpcClient] = None
     task :Optional[asyncio.Task] = None
     tokens_task :Optional[asyncio.Task] = None
+    watch_dog_task :Optional[asyncio.Task] = None
     tokens_list: List[CatData] = []
-
-
-
+    last_processed: float = 0
+ 
     def start(node: FullNodeRpcClient):
         ChiaSync.node_rpc_client = node
         ChiaSync.task = asyncio.create_task(ChiaSync.load_state_loop())
         ChiaSync.tokens_task = asyncio.create_task(ChiaSync.load_tokens_loop())
+        ChiaSync.watch_dog_task = asyncio.create_task(ChiaSync.watch_dog())
 
     def peak()-> BlockRecord:
         return ChiaSync.blockchain_state["peak"].height   
 
+    async def watch_dog():
+        while(True):
+            dead_time =ChiaSync.last_processed + (WAIT_TIME+15) 
+
+            if(dead_time < time.time()):
+                logger.warning("ChiaSync is not responding, killing it")
+                ChiaSync.close()
+                ChiaSync.start(ChiaSync.node_rpc_client)
+                await asyncio.sleep(20)
+           # else:
+                #print(f"ChiaSync is alive {dead_time -  time.time()}")
+            await asyncio.sleep(1)
+
     async def load_state_loop():
         while(True):
+            ChiaSync.last_processed = time.time()
+
             try:
                 ChiaSync.blockchain_state = await ChiaSync.node_rpc_client.get_blockchain_state()
                 print(f"blockchain height: { ChiaSync.peak() }")
+                
             except Exception as e:
                 print(f"exception: {e}")
-            await asyncio.sleep(10)
+            await asyncio.sleep(WAIT_TIME) 
 
     async def load_tokens_loop():
         while(True):
@@ -63,10 +83,7 @@ class ChiaSync:
                             chialisp = None
                             multiplier = None
                             category = None
-                            # if "clvm" in t:
-                            #     clvm = t["clvm"]
-                            # if "chialisp" in t:
-                            #     chialisp = t["chialisp"]
+            
                             if "logo_url" in t:
                                 logo_url = t["logo_url"]
                             if "multiplier" in t:
