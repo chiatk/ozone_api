@@ -167,7 +167,7 @@ async def get_utxos(  request: Request, item=Body({}),):
                 result.append([row.to_json_dict(), parent_coin_spend.to_json_dict()])      
 
         except Exception as e:
-
+            print(row)
             print(e)
             print(f"puzzle_hash: {puzzle_hash_item}")
             continue 
