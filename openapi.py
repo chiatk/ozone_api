@@ -151,9 +151,13 @@ async def get_utxos(  request: Request, item=Body({}),):
 
     for row in coin_records:
         try:
+            if row is None:
+                print(f"row is None")
+                continue
             if row.spent and include_spent_coins == False:
                 continue
             else:
+                
                 parent_coin: Optional[CoinRecord] = await full_node_client.get_coin_record_by_name(row.coin.parent_coin_info)
                 if parent_coin is None:
                     print(f"Without parent coin: {row.coin.parent_coin_info}")
@@ -169,7 +173,7 @@ async def get_utxos(  request: Request, item=Body({}),):
         except Exception as e:
             print(row)
             print(e)
-            print(f"puzzle_hash: {puzzle_hash_item}")
+           
             continue 
     print(f"coins size: {len(coin_records)}")
     return {"coins":result, "end_height": end_height} 
