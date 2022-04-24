@@ -274,6 +274,13 @@ async def query_balance(puzzle_hash, request: Request):
     print(data)
     return data
 
+
+@router.get('/active_versions')
+@cached(ttl=10, key_builder=lambda *args, **kwargs: f"active_versions:", alias='default')
+async def query_balance( request: Request):
+    return {"android":{"min":40, "actual":40}, "ios":{"min":40, "actual":41}}
+    
+
 @router.post('/get_coins_by_names')
 @cached(ttl=10, key_builder=lambda *args, **kwargs: f"balance: ", alias='default')
 async def get_coins(request: Request, item=Body({})):
