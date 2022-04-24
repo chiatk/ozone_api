@@ -52,8 +52,8 @@ class ChiaSync:
                 ChiaSync.close()
                 ChiaSync.start(ChiaSync.node_rpc_client)
                 await asyncio.sleep(20)
-           # else:
-                #print(f"ChiaSync is alive {dead_time -  time.time()}")
+            else:
+                print(f"ChiaSync is alive {dead_time -  time.time()}")
             await asyncio.sleep(1)
 
     async def load_state_loop():
