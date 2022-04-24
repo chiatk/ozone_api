@@ -156,9 +156,14 @@ async def get_utxos(  request: Request, item=Body({}),):
             else:
                 parent_coin: Optional[CoinRecord] = await full_node_client.get_coin_record_by_name(row.coin.parent_coin_info)
                 if parent_coin is None:
+                    print(f"Without parent coin: {row.coin.parent_coin_info}")
                     result.append([row.to_json_dict(), None]) 
                     continue
                 parent_coin_spend: Optional[CoinSpend] = await full_node_client.get_puzzle_and_solution(parent_coin.name, parent_coin.spent_block_index)
+                if parent_coin_spend is None:
+                    print(f"Without parent coin spend: {row.coin.parent_coin_info}")
+                    result.append([row.to_json_dict(), None]) 
+                    continue
                 result.append([row.to_json_dict(), parent_coin_spend.to_json_dict()])      
 
         except Exception as e:
