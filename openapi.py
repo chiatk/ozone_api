@@ -45,7 +45,7 @@ async def startup():
    
     await app.state.client.get_blockchain_state()
 
-    ChiaSync.start(app.state.client)
+    ChiaSync.start(app.state)
 
 
 @app.on_event("shutdown")

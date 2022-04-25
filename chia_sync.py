@@ -22,8 +22,15 @@ from chia.util.byte_types import hexstr_to_bytes
 from chia.types.coin_record import CoinRecord
 from chia.types.blockchain_format.sized_bytes import bytes32
 
+ 
+
 WAIT_TIME = 5
 
+async def get_full_node_client() -> FullNodeRpcClient:
+    config = settings.CHIA_CONFIG
+    full_node_client = await FullNodeRpcClient.create(config['self_hostname'], config['full_node']['rpc_port'],
+                                                      settings.CHIA_ROOT_PATH, settings.CHIA_CONFIG)
+    return full_node_client
 
 class ChiaSync:
     blockchain_state: Dict = {}
@@ -33,9 +40,11 @@ class ChiaSync:
     watch_dog_task :Optional[asyncio.Task] = None
     tokens_list: List[CatData] = []
     last_processed: float = 0
+    state = None
  
-    def start(node: FullNodeRpcClient):
-        ChiaSync.node_rpc_client = node
+    def start(state):
+        ChiaSync.node_rpc_client = state.client
+        ChiaSync.state = state
         ChiaSync.task = asyncio.create_task(ChiaSync.load_state_loop())
         ChiaSync.tokens_task = asyncio.create_task(ChiaSync.load_tokens_loop())
         ChiaSync.watch_dog_task = asyncio.create_task(ChiaSync.watch_dog())
@@ -45,12 +54,20 @@ class ChiaSync:
 
     async def watch_dog():
         while(True):
-            dead_time =ChiaSync.last_processed + (WAIT_TIME+15) 
+            dead_time =ChiaSync.last_processed + (WAIT_TIME+10) 
 
             if(dead_time < time.time()):
                 logger.warning("ChiaSync is not responding, killing it")
                 ChiaSync.close()
-                ChiaSync.start(ChiaSync.node_rpc_client)
+                try:
+                    ChiaSync.state.client.close()
+                except Exception as e:
+                    
+                    print(f"exception: {e}")
+                    pass
+                ChiaSync.state.client = await get_full_node_client()
+                
+                ChiaSync.start(ChiaSync.state)
                 await asyncio.sleep(20)
             else:
                 print(f"ChiaSync is alive {int(dead_time -  time.time())}")
@@ -67,7 +84,6 @@ class ChiaSync:
             except Exception as e:
                 print(f"exception: {e}")
             await asyncio.sleep(WAIT_TIME) 
-
     async def load_tokens_loop():
         while(True):
             try:
