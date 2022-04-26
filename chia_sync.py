@@ -123,7 +123,7 @@ class ChiaSync:
                 
             except Exception as e:
                 print(f"exception: {e}")
-            await asyncio.sleep(60*10)
+            await asyncio.sleep(60*30)
 
 
     def close():
