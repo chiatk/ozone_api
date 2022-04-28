@@ -156,7 +156,9 @@ async def get_utxos(  request: Request, item=Body({}),):
             if row is None:
                 print(f"row is None")
                 continue
-            if row.spent and include_spent_coins == False:
+            # if row.spent and include_spent_coins == False:
+            #     continue
+            if row.spent :
                 continue
             else:
                 
