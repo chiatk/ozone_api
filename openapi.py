@@ -187,7 +187,15 @@ async def get_utxos(  request: Request, item=Body({}),):
             if(i["spent_block_index"] ==0):
                 n_records.append(i)
         return {"coins":n_records, "end_height": end_height}     
-    print(f"coins size: {len(coin_records)}")
+    logger.debug(f"coins size: {len(coin_records)}")
+    if len(coin_records)>200:
+        n_records = []
+        i = 0
+        for  i in coin_records:
+            i += 1 
+            if(i < 200 == 0):
+                n_records.append(i)
+        return {"coins":n_records, "end_height": end_height}
     return {"coins":result, "end_height": end_height} 
 
 
