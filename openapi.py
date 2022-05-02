@@ -156,10 +156,9 @@ async def get_utxos(  request: Request, item=Body({}),):
             if row is None:
                 print(f"row is None")
                 continue
-            # if row.spent and include_spent_coins == False:
-            #     continue
-            if row.spent :
-                continue
+            if row.spent and include_spent_coins == False:
+                 continue
+           
             else:
                 
                 parent_coin: Optional[CoinRecord] = await full_node_client.get_coin_record_by_name(row.coin.parent_coin_info)

@@ -47,7 +47,7 @@ class ChiaSync:
         ChiaSync.state = state
         ChiaSync.task = asyncio.create_task(ChiaSync.load_state_loop())
         ChiaSync.tokens_task = asyncio.create_task(ChiaSync.load_tokens_loop())
-        ChiaSync.watch_dog_task = asyncio.create_task(ChiaSync.watch_dog())
+       # ChiaSync.watch_dog_task = asyncio.create_task(ChiaSync.watch_dog())
 
     def peak()-> BlockRecord:
         return ChiaSync.blockchain_state["peak"].height   
