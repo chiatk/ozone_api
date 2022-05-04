@@ -17,10 +17,13 @@ import config as settings
 from chia.util.byte_types import hexstr_to_bytes
 from chia.types.coin_record import CoinRecord
 from chia.types.blockchain_format.sized_bytes import bytes32
+import web_socket
 import traceback
 caches.set_config(settings.CACHE_CONFIG)
-
+ 
 app = FastAPI()
+
+ 
 
 cwd = os.path.dirname(__file__)
 
@@ -180,21 +183,7 @@ async def get_utxos(  request: Request, item=Body({}),):
             print(traceback.format_exc())
            
             continue 
-    # if len(coin_records)>400:
-    #     n_records = []
-    #     for  i in coin_records:
-    #         if(i["spent_block_index"] ==0):
-    #             n_records.append(i)
-    #     return {"coins":n_records, "end_height": end_height}     
-    # logger.debug(f"coins size: {len(coin_records)}")
-    # if len(coin_records)>200:
-    #     n_records = []
-    #     i = 0
-    #     for  i in coin_records:
-    #         i += 1 
-    #         if(i < 200 == 0):
-    #             n_records.append(i)
-    #     return {"coins":n_records, "end_height": end_height}
+  
     return {"coins":result, "end_height": end_height} 
 
 
@@ -246,6 +235,7 @@ async def create_transaction(request: Request, item=Body({})):
         resp = await full_node_client.push_tx(spb)
     except ValueError as e:
         logger.warning("sendtx: %s, error: %r", spb, e)
+        map = {"error": str(e)}
         raise HTTPException(400, str(e))
 
     return {
@@ -382,6 +372,9 @@ DEFAULT_TOKEN_LIST = [
 @router.get('/tokens')
 async def list_tokens():
     return DEFAULT_TOKEN_LIST
+    
 
+ 
 
 app.include_router(router, prefix="/v1")
+app.include_router(web_socket.router, tags=["WebSocket"])

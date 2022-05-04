@@ -21,7 +21,7 @@ import config as settings
 from chia.util.byte_types import hexstr_to_bytes
 from chia.types.coin_record import CoinRecord
 from chia.types.blockchain_format.sized_bytes import bytes32
-
+from starlette.websockets import WebSocket, WebSocketDisconnect
  
 
 WAIT_TIME = 5
@@ -34,6 +34,7 @@ async def get_full_node_client() -> FullNodeRpcClient:
 
 class ChiaSync:
     blockchain_state: Dict = {}
+    puzzle_hashes: Dict = {}
     node_rpc_client: Optional[FullNodeRpcClient] = None
     task :Optional[asyncio.Task] = None
     tokens_task :Optional[asyncio.Task] = None
@@ -46,40 +47,27 @@ class ChiaSync:
         ChiaSync.node_rpc_client = state.client
         ChiaSync.state = state
         ChiaSync.task = asyncio.create_task(ChiaSync.load_state_loop())
-        ChiaSync.tokens_task = asyncio.create_task(ChiaSync.load_tokens_loop())
-       # ChiaSync.watch_dog_task = asyncio.create_task(ChiaSync.watch_dog())
+        ChiaSync.tokens_task = asyncio.create_task(ChiaSync.load_tokens_loop()) 
 
     def peak()-> BlockRecord:
-        return ChiaSync.blockchain_state["peak"].height   
 
-    async def watch_dog():
-        while(True):
-            dead_time =ChiaSync.last_processed + (WAIT_TIME+10) 
+        if ChiaSync.blockchain_state is not None:
+            if "peak" in ChiaSync.blockchain_state:
+                return ChiaSync.blockchain_state["peak"].height
+        return 0
 
-            if(dead_time < time.time()):
-                logger.warning("ChiaSync is not responding, killing it")
-                ChiaSync.close()
-                try:
-                    ChiaSync.state.client.close()
-                except Exception as e:
-                    
-                    print(f"exception: {e}")
-                    pass
-                ChiaSync.state.client = await get_full_node_client()
-                
-                ChiaSync.start(ChiaSync.state)
-                await asyncio.sleep(20)
-            else:
-                print(f"ChiaSync is alive {int(dead_time -  time.time())}")
-            await asyncio.sleep(1)
-
+   
     async def load_state_loop():
         while(True):
             ChiaSync.last_processed = time.time()
-
             try:
+                last_peak = ChiaSync.peak()
                 ChiaSync.blockchain_state = await ChiaSync.node_rpc_client.get_blockchain_state()
                 print(f"blockchain height: { ChiaSync.peak() }")
+                if ChiaSync.peak() > last_peak:
+                    if last_peak == 0:
+                        last_peak = ChiaSync.peak() - 5
+                    asyncio.create_task(ChiaSync.puzzle_hash_tracing(last_peak, ChiaSync.peak() ))
                 
             except Exception as e:
                 print(f"exception: {e}")
@@ -105,8 +93,7 @@ class ChiaSync:
                             if "multiplier" in t:
                                 multiplier = t["multiplier"]
                             if "category" in t:
-                                category = t["category"]
-                            
+                                category = t["category"]  
 
                             cat_data = CatData(hash=t["hash"], code=t["code"], name=t["name"],\
                                description=t["description"], multiplier=multiplier, category=category, \
@@ -124,6 +111,77 @@ class ChiaSync:
             except Exception as e:
                 print(f"exception: {e}")
             await asyncio.sleep(60*30)
+
+
+    async def on_found(puzzle_sync_result: List, end_heigth: int, puzzle_hash: bytes32):
+        if puzzle_hash in ChiaSync.puzzle_hashes:
+            item = ChiaSync.puzzle_hashes[puzzle_hash]
+            for socket in item['sockets']:
+                 await socket.send_text(json.dumps({"coin": puzzle_sync_result, "heigth": end_heigth, "puzzle_hash": puzzle_hash}))
+
+    async def send_alert( coin_record: CoinRecord ):
+        parent_coin: Optional[CoinRecord] = await ChiaSync.node_rpc_client.get_coin_record_by_name(coin_record.coin.parent_coin_info)
+        if parent_coin is None:
+            logger.debug(f"Without parent coin: {coin_record.coin.parent_coin_info}")
+            await ChiaSync.on_found([coin_record.to_json_dict(), None], int(coin_record.coin.confirmed_block_index), coin_record.coin.puzzle_hash)  
+                
+        parent_coin_spend: Optional[CoinSpend] = await ChiaSync.node_rpc_client.get_puzzle_and_solution(parent_coin.name, parent_coin.spent_block_index)
+        if parent_coin_spend is None:
+            logger.debug(f"Without parent coin: {coin_record.coin.parent_coin_info}")
+            await ChiaSync.on_found([coin_record.to_json_dict(), None], int(coin_record.coin.confirmed_block_index), coin_record.coin.puzzle_hash)
+        
+        await ChiaSync.on_found([coin_record.to_json_dict(), parent_coin_spend.to_json_dict()], int(coin_record.confirmed_block_index), \
+            coin_record.coin.puzzle_hash)
+         
+        return True
+    
+
+    async def send_msg_to_sender( coin_record: CoinRecord, removal_coin_record: CoinRecord ):
+        await ChiaSync.send_alert(removal_coin_record)
+        return True
+        
+    async def check_is_in_db( puzzle_hash: bytes32):
+        return puzzle_hash in ChiaSync.puzzle_hashes
+
+
+    async def puzzle_hash_tracing( start: int = 1, end: Optional[int] = None) -> bool:
+        """
+        El método get_block_recors devuelve el primer bloque pero no el último.
+        Ejemplo si pones de 500 a 600 te devuelve hasta 599.
+        reward_claims_incorporated es diferente de None, es un bloque de transacción.
+        Esta función solo necesita un bloque inicial para iniciar el análisis.
+        """
+
+        if end is None:
+            end = ChiaSync.peak()
+    
+        records: List[BlockRecord] = await ChiaSync.node_rpc_client.get_block_records(start, end)
+      
+        for block_record in records:
+            if block_record.get('reward_claims_incorporated') is not None:
+                 
+                header_hash = bytes32.from_hexstr(block_record.get('header_hash'))
+        
+                additions, removals = await ChiaSync.node_rpc_client.get_additions_and_removals(header_hash)
+                
+                for cr in additions:
+                    coin_record: CoinRecord = cr
+                    coin_ph = coin_record.coin.puzzle_hash
+                    res = await ChiaSync.check_is_in_db(coin_ph )
+                    
+                    if res is True:
+                        await ChiaSync.send_alert(coin_record)
+                    
+                    for removal in removals:
+                        if coin_record.coin.parent_coin_info == removal.name:
+                            res = await ChiaSync.check_is_in_db(removal.coin.puzzle_hash )
+
+                            if res is True:
+                                await ChiaSync.send_msg_to_sender(coin_record, removal)
+                                 
+                    
+                
+        return False
 
 
     def close():
