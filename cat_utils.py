@@ -21,67 +21,43 @@ from chia.util.byte_types import hexstr_to_bytes
 from chia.types.coin_record import CoinRecord
 from chia.types.blockchain_format.sized_bytes import bytes32
 from starlette.websockets import WebSocket, WebSocketDisconnect
+ 
 
-
-async def analice_block( node_client: FullNodeRpcClient, coin: CoinRecord,) -> bool:
+async def get_sender_puzzle_hash_of_cat_coin(coin_record: CoinRecord, node_client: FullNodeRpcClient) -> Optional[bytes32]:
     """
-    El método get_block_recors devuelve el primer bloque pero no el último.
-    Ejemplo si pones de 500 a 600 te devuelve hasta 599.
-    reward_claims_incorporated es diferente de None, es un bloque de transacción.
-    Esta función solo necesita un bloque inicial para iniciar el análisis.
+    Get the puzzle hash of the sender of the cat coin.
+    First obtain the parent coin, then, get the parent coin spend.
+    When the coin spend is found, get the puzzle_reveal, uncurry it, get the mod and the arguments
+    get the arguments, take the second argument and get the puzzle hash of the sender.
+
     """
 
-    confirmed_height = int(coin.confirmed_block_index)
-
-
-    block_record: Optional[BlockRecord] = await node_client.get_block_record_by_height(confirmed_height)
-     
-            
-    header_hash =  block_record.header_hash
-
-    additions, removals = await node_client.get_additions_and_removals(header_hash)
-  
-    for cr in additions:
-        coin_record: CoinRecord = cr
-        coin_ph = coin_record.coin.puzzle_hash
-        
-            
-        for removal in removals:
-            parent_coin_info = coin_record.coin.parent_coin_info.hex()
-            removal_name = removal.name.hex()
-            if parent_coin_info == removal_name:
-                
-                return removal
-                        
-                                
-                
-            
-    return None
-
-async def get_sender_address_of_cat_coin(coin: CoinRecord, node_client: FullNodeRpcClient) -> Optional[bytes32]:
-
-    removal_coin = await analice_block(node_client, coin)
-    # address = encode_puzzle_hash(coin.coin.puzzle_hash, "xch")
-    # print(f"address: {address}")
-    # address2 = encode_puzzle_hash(removal_coin.coin.puzzle_hash, "xch")
-    # print(f"address2: {address2}")
-
-    parent_coin_spend: Optional[CoinSpend] = await node_client.get_puzzle_and_solution(removal_coin.name, removal_coin.spent_block_index)
+    parent_coin: Optional[CoinRecord] = await node_client.get_coin_record_by_name(coin_record.coin.parent_coin_info)
+    parent_coin_spend: Optional[CoinSpend] = await node_client.get_puzzle_and_solution(parent_coin.name, parent_coin.spent_block_index)
     puzzle_reveal: SerializedProgram = parent_coin_spend.puzzle_reveal
     mod, curried_args = puzzle_reveal.uncurry()
     if mod == CAT_MOD:
-        arguments = curried_args.as_iter()
+        arguments = list(curried_args.as_iter())
         puzzle= arguments[2]
-        puzzle_hash = puzzle.hash()
-        print(parent_coin_spend)
+        puzzle_hash = puzzle.get_tree_hash()
+        return puzzle_hash
+      
     else:
-        print(f"No es un cat coin")
+        print(f"{coin_record.coin.name.hex()} is not a cat coin")
+        
+    return None
 
 async def main():
     node_client = await get_full_node_client()
-    coin_name = bytes32(bytes.fromhex('3f371d3533bae975c3cd3b7e38595403c83717207139f86ff466119692865b41'))
+    coin_name = bytes32(bytes.fromhex('4743474f3bcd85039b6c4c98d94ceaaa6684ae1aa6a2eb8f3119f1fdf11334d7'))
     coin = await node_client.get_coin_record_by_name(coin_name)
-    await get_sender_address_of_cat_coin(coin, node_client)
+    sender_puzzle_hash =  await get_sender_puzzle_hash_of_cat_coin(coin, node_client)
+
+    sender_address = encode_puzzle_hash(sender_puzzle_hash, "xch")
+    print(f"Sender address: {sender_address}")
+
+    node_client.close()
+    await node_client.await_closed()
     
     
 
