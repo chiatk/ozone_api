@@ -24,7 +24,7 @@ from chia.types.blockchain_format.sized_bytes import bytes32
 from starlette.websockets import WebSocket, WebSocketDisconnect
  
 
-WAIT_TIME = 5
+WAIT_TIME = 20
 
 async def get_full_node_client() -> FullNodeRpcClient:
     config = settings.CHIA_CONFIG
