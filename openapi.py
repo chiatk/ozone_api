@@ -1,3 +1,4 @@
+import datetime
 import os
 import json
 from typing import List, Optional, Dict, Tuple
@@ -12,6 +13,7 @@ from chia.util.bech32m import encode_puzzle_hash, decode_puzzle_hash as inner_de
 from chia.types.spend_bundle import SpendBundle
 from chia.types.coin_spend import CoinSpend
 from cat_data import CatData
+from cat_utils import get_sender_puzzle_hash_of_cat_coin
 from chia_sync import ChiaSync
 import config as settings
 from chia.util.byte_types import hexstr_to_bytes
@@ -19,6 +21,8 @@ from chia.types.coin_record import CoinRecord
 from chia.types.blockchain_format.sized_bytes import bytes32
 import web_socket
 import traceback
+from dateutil.relativedelta import relativedelta
+
 caches.set_config(settings.CACHE_CONFIG)
  
 app = FastAPI()
@@ -192,9 +196,7 @@ async def get_utxos(  request: Request, item=Body({}),):
 #@cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_cat_coins_by_outer_puzzle_hashes:{kwargs['item']}", alias='default')
 async def get_utxos(  request: Request, item=Body({}),):
     # todo: use blocke indexer and supoort unconfirmed param
- 
   
-
     names:List[bytes32] = []
     for puzzle_hash_hex in item['coins']:
         coin_name  = bytes32(bytes.fromhex(puzzle_hash_hex))
@@ -372,7 +374,65 @@ DEFAULT_TOKEN_LIST = [
 @router.get('/tokens')
 async def list_tokens():
     return DEFAULT_TOKEN_LIST
-    
+
+@router.get('/staking/list')
+async def list_tokens():
+    with open('staking_list.json') as json_file:
+        data = json.load(json_file)
+        for row in data:
+            puzzle_hash = decode_puzzle_hash(row["address"])
+            cat_puzzle = bytes32(bytes.fromhex(row["cat_ph"]))
+            row["puzzle_hash"] = puzzle_hash.hex()
+            row["cat_address"] = encode_puzzle_hash(cat_puzzle, "xch")
+
+        return data
+     
+@router.get('/staking/{month}/{status}')
+async def list_tokens(month: int, status:str, request: Request):
+    include_spent_coins = True
+
+    if status == "active":
+        include_spent_coins = False
+
+    with open('staking_list.json') as json_file:
+        data = json.load(json_file)
+        founded: Optional[dict] = None
+        for item in data:
+            if item['month'] == month:
+                founded = item
+                break
+        
+        if founded is None:
+            return JSONResponse(status_code=404, content={'error': 'not found'})
+        
+        puzzle_hash = bytes32(bytes.fromhex(founded["cat_ph"]))
+        full_node_client: FullNodeRpcClient = request.app.state.client
+        records = await full_node_client.get_coin_records_by_puzzle_hash(puzzle_hash=puzzle_hash,\
+                    include_spent_coins=include_spent_coins,   start_height=1953631)
+
+        result = []
+        for item in records:
+            coin_record: CoinRecord = item
+            puzzle_hash:Optional[bytes32] = await get_sender_puzzle_hash_of_cat_coin(coin_record, full_node_client)
+
+            create_date_time = datetime.datetime.utcfromtimestamp(coin_record.timestamp)
+            monts_delta = relativedelta(months=month)
+            payment_date_time = create_date_time + monts_delta
+            payment_date_time = payment_date_time.replace(hour=0, minute=0, second=0, microsecond=0)
+
+            posible_payment = (coin_record.coin.amount + (coin_record.coin.amount * (founded["porcentage"]/100)))/1000
+            amount = coin_record.coin.amount / 1000
+            result.append([coin_record.to_json_dict(), {"withdrawal_puzzle_hash": puzzle_hash.hex(),\
+                    "withdrawal_address": encode_puzzle_hash(puzzle_hash, "xch"),\
+                    "withdrawal_date_time":payment_date_time.strftime("%Y-%m-%d %H:%M:%S"),\
+                    "create_date_time":create_date_time.strftime("%Y-%m-%d %H:%M:%S"),\
+                    "amount":float(amount), \
+                    "posible_withdrawal":float(posible_payment)}])
+
+        return result
+        
+        
+
 
  
 

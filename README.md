@@ -19,3 +19,7 @@ python run_web_server.py
 ## Thanks
 
 Thanks to the contributions of [Goby Open API](https://github.com/GobyWallet/openapi)
+
+## Intall python dateutil
+
+sudo pip install python-dateutil --upgrade

@@ -1,0 +1,34 @@
+[
+  {
+    "name": "1 Mes",
+    "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
+    "month": 1,
+    "porcentage": 90,
+    "address": "xch1z3j0zuaruew983khs3wph4030v53s7797fg8wr5cpuf5l2az8hhsfdrwqf",
+    "cat_ph": "e8c9b3b728cde025573144b79e0c9e65b19cb708da223fb429320235548f66dd"
+  },
+  {
+    "name": "3 Meses",
+    "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
+    "month": 3,
+    "porcentage": 125,
+    "address": "xch1jjfkctg7xpvmqmwr7dyddanhrup9380aptph39hxexpmz449uj8sp9uu7t",
+    "cat_ph": "afe7a52cd4e510d5c19ca4ceff46ea2a938130985c90f664a3ee91b2194e2c70"
+  },
+  {
+    "name": "6 Meses",
+    "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
+    "month": 6,
+    "porcentage": 175,
+    "address": "xch1jn8gva09ckyudwr4ykke0e8sr5fx2p4dqaa4veyguua38fccxy6q55rg4v",
+    "cat_ph": "356e1791f75c333639f933c88c5b7677eea1aa30c5acec957e3076443b84469c"
+  },
+  {
+    "name": "12 Meses",
+    "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
+    "month": 12,
+    "porcentage": 250,
+    "address": "xch10m4tvx4v6u06jcmmcawclg60hdsgru4wx7rrn38vg3v38np9g94shwhtwe",
+    "cat_ph": "d7a0c0745666d6ddc9f4696dc77c22c5a51ea6805e768d09cb7ab3085892b4e3"
+  }
+]
