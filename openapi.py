@@ -383,7 +383,8 @@ async def list_tokens():
             puzzle_hash = decode_puzzle_hash(row["address"])
             cat_puzzle = bytes32(bytes.fromhex(row["cat_ph"]))
             row["puzzle_hash"] = puzzle_hash.hex()
-            row["cat_address"] = encode_puzzle_hash(cat_puzzle, "xch")
+            del row["cat_ph"]
+            
 
         return data
      
@@ -420,7 +421,7 @@ async def list_tokens(month: int, status:str, request: Request):
             payment_date_time = create_date_time + monts_delta
             payment_date_time = payment_date_time.replace(hour=0, minute=0, second=0, microsecond=0)
 
-            posible_payment = (coin_record.coin.amount + (coin_record.coin.amount * (founded["porcentage"]/100)))/1000
+            posible_payment = (coin_record.coin.amount + (coin_record.coin.amount * (founded["percentage"]/100)))/1000
             amount = coin_record.coin.amount / 1000
             result.append([coin_record.to_json_dict(), {"withdrawal_puzzle_hash": puzzle_hash.hex(),\
                     "withdrawal_address": encode_puzzle_hash(puzzle_hash, "xch"),\
