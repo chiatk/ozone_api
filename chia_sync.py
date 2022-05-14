@@ -46,6 +46,9 @@ class ChiaSync:
     def start(state):
         ChiaSync.node_rpc_client = state.client
         ChiaSync.state = state
+        if  ChiaSync.task is not None:
+            if not ChiaSync.task.cancelled():
+                ChiaSync.task.cancel()
         ChiaSync.task = asyncio.create_task(ChiaSync.load_state_loop())
         ChiaSync.tokens_task = asyncio.create_task(ChiaSync.load_tokens_loop()) 
 

@@ -115,24 +115,25 @@ async def get_tokens(  request: Request):
 @cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_cat_coins_by_outer_puzzle_hashes:{kwargs['item']}", alias='default')
 async def get_utxos(  request: Request, item=Body({}),):
     # todo: use blocke indexer and supoort unconfirmed param
-
-    start_height: Optional[int] = None
-    end_height: Optional[int] = ChiaSync.peak()
+    blockchain_peak = ChiaSync.peak()
+    start_height: Optional[int] = 0
+    sync_heigth = 1000
+   
     include_spent_coins = False
 
     if 'start_height' in item:
         start_height = int(item['start_height'])
-    
-    if 'end_height' in item:
-        end_height = int(item['end_height'])
+ 
     
     if 'include_spent_coins' in item:
         include_spent_coins = bool(item['include_spent_coins'])
 
-    if end_height - start_height > 100:
-        end_height = start_height + 100
+    if start_height < 1000000:
+        sync_heigth = 50000
+
     
-    logger.debug(f"start_height: {start_height} end_height: {end_height} include_spent_coins: {include_spent_coins}")
+    
+    logger.debug(f"start_height: {start_height}  include_spent_coins: {include_spent_coins}")
     logger.debug(f"item len: {len(item['puzzle_hashes'])}") 
 
     puzzle_hashes:List[Tuple[bytes32, int]] = []
@@ -147,6 +148,9 @@ async def get_utxos(  request: Request, item=Body({}),):
             puzzle_hash, start_height = puzzle_hash_item
             if start_height == 0:
                 start_height = 32
+            end_height: Optional[int] = ChiaSync.peak()
+            if end_height - start_height > sync_heigth:
+                end_height = start_height + sync_heigth
            
             records = await full_node_client.get_coin_records_by_puzzle_hash(puzzle_hash=puzzle_hash,\
             include_spent_coins=include_spent_coins,   start_height=start_height-32, end_height=end_height)
@@ -161,7 +165,7 @@ async def get_utxos(  request: Request, item=Body({}),):
     coin_records.sort(key=lambda x: int(x.confirmed_block_index), reverse=False)
     if len(coin_records) > 100:
         coin_records = coin_records[:100]
-    end_height = coin_records[-1].confirmed_block_index
+        end_height = int(coin_records[-1].confirmed_block_index)
     
     result = []
 
@@ -195,7 +199,7 @@ async def get_utxos(  request: Request, item=Body({}),):
            
             continue 
   
-    return {"coins":result, "end_height": end_height} 
+    return {"coins":result, "end_height": end_height, "blockchain_peak": blockchain_peak} 
 
 
 
@@ -444,5 +448,5 @@ async def list_tokens(month: int, status:str, request: Request):
 
  
 
-app.include_router(router, prefix="/v1")
+app.include_router(router, prefix="/v1.1")
 app.include_router(web_socket.router, tags=["WebSocket"])
