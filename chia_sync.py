@@ -50,6 +50,10 @@ class ChiaSync:
             if not ChiaSync.task.cancelled():
                 ChiaSync.task.cancel()
         ChiaSync.task = asyncio.create_task(ChiaSync.load_state_loop())
+
+        if ChiaSync.tokens_task is not None:
+            if not ChiaSync.tokens_task.cancelled():
+                ChiaSync.tokens_task.cancel()
         ChiaSync.tokens_task = asyncio.create_task(ChiaSync.load_tokens_loop()) 
 
     def peak()-> BlockRecord:
