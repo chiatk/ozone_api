@@ -128,6 +128,9 @@ async def get_utxos(  request: Request, item=Body({}),):
     
     if 'include_spent_coins' in item:
         include_spent_coins = bool(item['include_spent_coins'])
+
+    if end_height - start_height > 100:
+        end_height = start_height + 100
     
     logger.debug(f"start_height: {start_height} end_height: {end_height} include_spent_coins: {include_spent_coins}")
     logger.debug(f"item len: {len(item['puzzle_hashes'])}") 
@@ -137,16 +140,16 @@ async def get_utxos(  request: Request, item=Body({}),):
         touple_item :Tuple[bytes32, int] = (bytes32(bytes.fromhex(puzzle_hash_hex[0])), int(puzzle_hash_hex[1]))
         puzzle_hashes.append(touple_item)
 
-    full_node_client = request.app.state.client
+    full_node_client:FullNodeRpcClient = request.app.state.client
     coin_records:List[CoinRecord] = []
     for puzzle_hash_item in puzzle_hashes:
         try:
             puzzle_hash, start_height = puzzle_hash_item
             if start_height == 0:
                 start_height = 32
-            #start_height = 32
+           
             records = await full_node_client.get_coin_records_by_puzzle_hash(puzzle_hash=puzzle_hash,\
-            include_spent_coins=include_spent_coins,   start_height=start_height-32)
+            include_spent_coins=include_spent_coins,   start_height=start_height-32, end_height=end_height)
             for r in records:
                 coin_records.append(r)
            
@@ -155,6 +158,10 @@ async def get_utxos(  request: Request, item=Body({}),):
             print(e)
             print(f"puzzle_hash: {puzzle_hash_item}")
             continue
+    coin_records.sort(key=lambda x: int(x.confirmed_block_index), reverse=False)
+    if len(coin_records) > 100:
+        coin_records = coin_records[:100]
+    end_height = coin_records[-1].confirmed_block_index
     
     result = []
 

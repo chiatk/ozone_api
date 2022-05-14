@@ -61,13 +61,13 @@ class ChiaSync:
         while(True):
             ChiaSync.last_processed = time.time()
             try:
-                last_peak = ChiaSync.peak()
+                #last_peak = ChiaSync.peak()
                 ChiaSync.blockchain_state = await ChiaSync.node_rpc_client.get_blockchain_state()
                 print(f"blockchain height: { ChiaSync.peak() }")
-                if ChiaSync.peak() > last_peak:
-                    if last_peak == 0:
-                        last_peak = ChiaSync.peak() - 5
-                    asyncio.create_task(ChiaSync.puzzle_hash_tracing(last_peak, ChiaSync.peak() ))
+                # if ChiaSync.peak() > last_peak:
+                #     if last_peak == 0:
+                #         last_peak = ChiaSync.peak() - 5
+                #     asyncio.create_task(ChiaSync.puzzle_hash_tracing(last_peak, ChiaSync.peak() ))
                 
             except Exception as e:
                 print(f"exception: {e}")
