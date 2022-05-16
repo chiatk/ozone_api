@@ -1,6 +1,7 @@
 import asyncio
 from lib2to3.pgen2.token import OP
 from optparse import Option
+from pickletools import uint4
 from chia.types.blockchain_format.program import SerializedProgram, INFINITE_COST
 from typing import List, Optional, Dict
 from chia.wallet.puzzles.cat_loader import CAT_MOD
@@ -21,6 +22,13 @@ from chia.util.byte_types import hexstr_to_bytes
 from chia.types.coin_record import CoinRecord
 from chia.types.blockchain_format.sized_bytes import bytes32
 from starlette.websockets import WebSocket, WebSocketDisconnect
+
+from chia.full_node.bundle_tools import simple_solution_generator
+from chia.full_node.mempool_check_conditions import get_name_puzzle_conditions, mempool_check_time_locks
+from chia.consensus.constants import ConsensusConstants
+from chia.consensus.default_constants import DEFAULT_CONSTANTS
+from chia.consensus.cost_calculator import NPCResult
+from chia.full_node.mempool import Mempool
  
 
 async def get_sender_puzzle_hash_of_cat_coin(coin_record: CoinRecord, node_client: FullNodeRpcClient) -> Optional[bytes32]:
@@ -77,3 +85,25 @@ if __name__ == '__main__':
     except Exception as e:
         print(e)
 
+
+
+def get_spend_bundlecost(spend_bundle: SpendBundle ) -> uint4:
+    program = simple_solution_generator(spend_bundle) 
+    config = config = settings.CHIA_CONFIG
+    overrides = config["network_overrides"]["constants"][config["selected_network"]]
+    consensus_constants = DEFAULT_CONSTANTS.replace_str_to_bytes(**overrides)
+    result: NPCResult = get_name_puzzle_conditions( program, consensus_constants.MAX_BLOCK_COST_CLVM,\
+         cost_per_byte=consensus_constants.COST_PER_BYTE, mempool_mode=True)
+
+    return result.cost 
+def min_fee_for_bundle(spend_bundle: SpendBundle  )-> float:
+    """
+    Get the minimum fee for a bundle.
+    """
+    bundle_cost = get_spend_bundlecost(spend_bundle)
+    config = config = settings.CHIA_CONFIG
+    overrides = config["network_overrides"]["constants"][config["selected_network"]]
+    consensus_constants = DEFAULT_CONSTANTS.replace_str_to_bytes(**overrides)
+    mempool_max_total_cost = int(consensus_constants.MAX_BLOCK_COST_CLVM * consensus_constants.MEMPOOL_BLOCK_BUFFER)
+    mempool: Mempool = Mempool(mempool_max_total_cost)
+    return mempool.get_min_fee_rate(bundle_cost)

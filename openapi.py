@@ -212,11 +212,7 @@ async def get_utxos(  request: Request, item=Body({}),):
     blockchain_peak = ChiaSync.peak()
     start_height: Optional[int] = 0
    
-  
-
     wallet_results = []
-
-    
  
     logger.debug(f"item len: {len(item['puzzle_hashes'])}") 
 
@@ -240,6 +236,9 @@ async def get_utxos(  request: Request, item=Body({}),):
             
             if start_height < 1000000:
                 sync_heigth = 100000
+            
+            if puzzle_hash in ChiaSync.slow_phs: 
+                sync_heigth = 100
 
             logger.debug(f"sync_heigth: {sync_heigth}")
 
@@ -255,17 +254,29 @@ async def get_utxos(  request: Request, item=Body({}),):
            
             records = await full_node_client.get_coin_records_by_puzzle_hash(puzzle_hash=puzzle_hash,\
             include_spent_coins=include_spent_coins,   start_height=start_height, end_height=end_height)
+            if len(records) >100:
+                if puzzle_hash is not  ChiaSync.slow_phs: 
+                    print(f"puzzle_hash: {puzzle_hash_item} to slow")
+                    ChiaSync.slow_phs.append(puzzle_hash)
              
-            wallet_results.append({"puzzle_hash": puzzle_hash.hex(), "end_height": end_height})
-
+            
+            all_addded = True
             for r in records:
+                if( len(coin_records)>100):
+                    all_addded = False
+                    wallet_results.append({"puzzle_hash": puzzle_hash.hex(), "end_height": r.coin.confirmed_block_index})
+                    break
                 coin_records.append(r)
+
+            if all_addded:
+                wallet_results.append({"puzzle_hash": puzzle_hash.hex(), "end_height": end_height})
            
         except Exception as e:
             logger.exception(e)
             print(e)
             print(f"puzzle_hash: {puzzle_hash_item}")
             continue
+
     coin_records.sort(key=lambda x: int(x.confirmed_block_index), reverse=False)
   
 

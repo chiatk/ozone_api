@@ -1,3 +1,4 @@
+from ast import Set
 import asyncio
 from lib2to3.pgen2.token import OP
 from optparse import Option
@@ -41,6 +42,7 @@ class ChiaSync:
     watch_dog_task :Optional[asyncio.Task] = None
     tokens_list: List[CatData] = []
     last_processed: float = 0
+    slow_phs: set[bytes32] = set()
     state = None
  
     def start(state):
