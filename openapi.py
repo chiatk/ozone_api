@@ -119,17 +119,16 @@ async def get_utxos(  request: Request, item=Body({}),):
     start_height: Optional[int] = 0
     sync_heigth = 1000
    
-    include_spent_coins = False
+    include_spent_coins = True
 
     if 'start_height' in item:
         start_height = int(item['start_height'])
  
     
-    if 'include_spent_coins' in item:
-        include_spent_coins = bool(item['include_spent_coins'])
-
+   
     if start_height < 1000000:
-        sync_heigth = 50000
+        sync_heigth = 200000
+    low_heigth= blockchain_peak
 
     
     
@@ -151,6 +150,9 @@ async def get_utxos(  request: Request, item=Body({}),):
             end_height: Optional[int] = ChiaSync.peak()
             if end_height - start_height > sync_heigth:
                 end_height = start_height + sync_heigth
+        
+            if end_height< low_heigth:
+                low_heigth = end_height
            
             records = await full_node_client.get_coin_records_by_puzzle_hash(puzzle_hash=puzzle_hash,\
             include_spent_coins=include_spent_coins,   start_height=start_height-32, end_height=end_height)
@@ -166,6 +168,8 @@ async def get_utxos(  request: Request, item=Body({}),):
     if len(coin_records) > 100:
         coin_records = coin_records[:100]
         end_height = int(coin_records[-1].confirmed_block_index)
+        if end_height < low_heigth:
+            low_heigth = end_height
     
     result = []
 
@@ -199,7 +203,7 @@ async def get_utxos(  request: Request, item=Body({}),):
            
             continue 
   
-    return {"coins":result, "end_height": end_height, "blockchain_peak": blockchain_peak} 
+    return {"coins":result, "end_height": low_heigth, "blockchain_peak": blockchain_peak} 
 
 
 
