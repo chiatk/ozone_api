@@ -21,6 +21,14 @@
             "justMyCode": true
         },
         {
+            "name": "run_web_server_https",
+            "type": "python",
+            "request": "launch",
+            "program": "run_web_server_https.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "Python: FastAPI",
             "type": "python",
             "request": "launch",

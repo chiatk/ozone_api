@@ -226,7 +226,7 @@ async def get_utxos(  request: Request, item=Body({}),):
     for puzzle_hash_item in puzzle_hashes:
         try:
             puzzle_hash, start_height = puzzle_hash_item
-            sync_heigth = 50000
+            sync_heigth = 250000
    
             include_spent_coins = True
 
@@ -235,10 +235,10 @@ async def get_utxos(  request: Request, item=Body({}),):
         
             
             if start_height < 1000000:
-                sync_heigth = 100000
+                sync_heigth = 500000
             
             if puzzle_hash in ChiaSync.slow_phs: 
-                sync_heigth = 100
+                sync_heigth = 10000
 
             logger.debug(f"sync_heigth: {sync_heigth}")
 
@@ -257,14 +257,14 @@ async def get_utxos(  request: Request, item=Body({}),):
             if len(records) >100:
                 if puzzle_hash is not  ChiaSync.slow_phs: 
                     print(f"puzzle_hash: {puzzle_hash_item} to slow")
-                    ChiaSync.slow_phs.append(puzzle_hash)
+                    ChiaSync.slow_phs.add(puzzle_hash)
              
             
             all_addded = True
             for r in records:
                 if( len(coin_records)>100):
                     all_addded = False
-                    wallet_results.append({"puzzle_hash": puzzle_hash.hex(), "end_height": r.coin.confirmed_block_index})
+                    wallet_results.append({"puzzle_hash": puzzle_hash.hex(), "end_height": r.confirmed_block_index})
                     break
                 coin_records.append(r)
 
@@ -517,50 +517,9 @@ async def list_tokens():
 async def list_tokens(month: int, status:str, request: Request):
     include_spent_coins = True
 
-    if status == "active":
-        include_spent_coins = False
-
-    with open('staking_list.json') as json_file:
-        data = json.load(json_file)
-        founded: Optional[dict] = None
-        for item in data:
-            if item['month'] == month:
-                founded = item
-                break
-        
-        if founded is None:
-            return JSONResponse(status_code=404, content={'error': 'not found'})
-        
-        puzzle_hash = bytes32(bytes.fromhex(founded["cat_ph"]))
-        full_node_client: FullNodeRpcClient = request.app.state.client
-        records = await full_node_client.get_coin_records_by_puzzle_hash(puzzle_hash=puzzle_hash,\
-                    include_spent_coins=include_spent_coins,   start_height=1953631)
-
-        result = []
-        for item in records:
-            coin_record: CoinRecord = item
-            puzzle_hash:Optional[bytes32] = await get_sender_puzzle_hash_of_cat_coin(coin_record, full_node_client)
-
-            create_date_time = datetime.datetime.utcfromtimestamp(coin_record.timestamp)
-            monts_delta = relativedelta(months=month)
-            payment_date_time = create_date_time + monts_delta
-            payment_date_time = payment_date_time.replace(hour=0, minute=0, second=0, microsecond=0)
-
-            posible_payment = (coin_record.coin.amount + (coin_record.coin.amount * (founded["percentage"]/100)))/1000
-            amount = coin_record.coin.amount / 1000
-            result.append([coin_record.to_json_dict(), {"withdrawal_puzzle_hash": puzzle_hash.hex(),\
-                    "withdrawal_address": encode_puzzle_hash(puzzle_hash, "xch"),\
-                    "withdrawal_date_time":payment_date_time.strftime("%Y-%m-%d %H:%M:%S"),\
-                    "create_date_time":create_date_time.strftime("%Y-%m-%d %H:%M:%S"),\
-                    "amount":float(amount), \
-                    "posible_withdrawal":float(posible_payment)}])
-
-        return result
+    return await ChiaSync.get_staking_data(month, status)
         
         
-
-
- 
 
 app.include_router(router, prefix="/v1.1")
 app.include_router(web_socket.router, tags=["WebSocket"])

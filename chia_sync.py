@@ -1,10 +1,12 @@
 from ast import Set
 import asyncio
+import datetime
 from lib2to3.pgen2.token import OP
 from optparse import Option
 import os
 import json
 import time 
+from dateutil.relativedelta import relativedelta
 from typing import List, Optional, Dict
 import requests
 from logzero import logger
@@ -18,6 +20,8 @@ from chia.types.spend_bundle import SpendBundle
 from chia.types.coin_spend import CoinSpend
 from chia.consensus.block_record import BlockRecord
 from cat_data import CatData
+
+ 
 import config as settings
 from chia.util.byte_types import hexstr_to_bytes
 from chia.types.coin_record import CoinRecord
@@ -33,6 +37,50 @@ async def get_full_node_client() -> FullNodeRpcClient:
                                                       settings.CHIA_ROOT_PATH, settings.CHIA_CONFIG)
     return full_node_client
 
+
+async def get_staking_coins(full_node_client: FullNodeRpcClient, month: int) -> List:
+    with open('staking_list.json') as json_file:
+        data = json.load(json_file)
+        founded: Optional[dict] = None
+        for item in data:
+            if item['month'] == month:
+                founded = item
+                break
+        
+        if founded is None:
+            return JSONResponse(status_code=404, content={'error': 'not found'})
+        
+        puzzle_hash = bytes32(bytes.fromhex(founded["cat_ph"]))
+        
+        records = await full_node_client.get_coin_records_by_puzzle_hash(puzzle_hash=puzzle_hash,\
+                    include_spent_coins=True,   start_height=1953631)
+
+        result = []
+        from cat_utils import get_sender_puzzle_hash_of_cat_coin
+        for item in records:
+            coin_record: CoinRecord = item
+            puzzle_hash:Optional[bytes32] = await get_sender_puzzle_hash_of_cat_coin(coin_record, full_node_client)
+
+            create_date_time = datetime.datetime.utcfromtimestamp(coin_record.timestamp)
+            monts_delta = relativedelta(months=month)
+            payment_date_time = create_date_time + monts_delta
+            payment_date_time = payment_date_time.replace(hour=0, minute=0, second=0, microsecond=0)
+            if(coin_record.coin.amount<300000):
+                continue
+
+            posible_payment = (coin_record.coin.amount + (coin_record.coin.amount * (founded["percentage"]/100)))/1000
+            amount = coin_record.coin.amount / 1000
+            coin_json = coin_record.to_json_dict()
+            coin_json["name"] = coin_record.coin.name().hex()
+            result.append([coin_json, {"withdrawal_puzzle_hash": puzzle_hash.hex(),\
+                    "withdrawal_address": encode_puzzle_hash(puzzle_hash, "xch"),\
+                    "withdrawal_date_time":payment_date_time.strftime("%Y-%m-%d %H:%M:%S"),\
+                    "create_date_time":create_date_time.strftime("%Y-%m-%d %H:%M:%S"),\
+                    "amount":float(amount), \
+                    "posible_withdrawal":float(posible_payment)}])
+        
+        return result
+
 class ChiaSync:
     blockchain_state: Dict = {}
     puzzle_hashes: Dict = {}
@@ -44,6 +92,7 @@ class ChiaSync:
     last_processed: float = 0
     slow_phs: set[bytes32] = set()
     state = None
+    staking_data = {}
  
     def start(state):
         ChiaSync.node_rpc_client = state.client
@@ -70,17 +119,23 @@ class ChiaSync:
         while(True):
             ChiaSync.last_processed = time.time()
             try:
-                #last_peak = ChiaSync.peak()
+                last_peak = ChiaSync.peak()
                 ChiaSync.blockchain_state = await ChiaSync.node_rpc_client.get_blockchain_state()
                 print(f"blockchain height: { ChiaSync.peak() }")
-                # if ChiaSync.peak() > last_peak:
-                #     if last_peak == 0:
-                #         last_peak = ChiaSync.peak() - 5
-                #     asyncio.create_task(ChiaSync.puzzle_hash_tracing(last_peak, ChiaSync.peak() ))
+                if ChiaSync.peak() > last_peak:
+                    if last_peak == 0:
+                         last_peak = ChiaSync.peak() - 5
+                    asyncio.create_task(ChiaSync.check_stakin_coins())
                 
             except Exception as e:
                 print(f"exception: {e}")
             await asyncio.sleep(WAIT_TIME) 
+    async def check_stakin_coins():
+        months = [1,3,6,12]
+        for month in months:
+            data = await get_staking_coins(ChiaSync.node_rpc_client, month)
+            ChiaSync.staking_data[month] = data
+
     async def load_tokens_loop():
         while(True):
             try:
@@ -191,6 +246,17 @@ class ChiaSync:
                     
                 
         return False
+
+    async def get_staking_data(month:int, state:int):
+        if(month in ChiaSync.staking_data):
+
+            if ChiaSync.staking_data[month] is not None:
+                return ChiaSync.staking_data[month]
+        
+        data = await get_staking_coins(ChiaSync.node_rpc_client, month)
+
+        ChiaSync.staking_data[month] = data
+        return data
 
 
     def close():
