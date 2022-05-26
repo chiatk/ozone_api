@@ -226,7 +226,7 @@ async def get_utxos(  request: Request, item=Body({}),):
     for puzzle_hash_item in puzzle_hashes:
         try:
             puzzle_hash, start_height = puzzle_hash_item
-            sync_heigth = 250000
+            sync_heigth = 500000
    
             include_spent_coins = True
 
@@ -235,7 +235,7 @@ async def get_utxos(  request: Request, item=Body({}),):
         
             
             if start_height < 1000000:
-                sync_heigth = 500000
+                sync_heigth = 1000000
             
             if puzzle_hash in ChiaSync.slow_phs: 
                 sync_heigth = 10000
