@@ -34,8 +34,19 @@ manager = ConnectionManager()
 router = APIRouter()
 
 
+
 async def send_puzzle_sync_result(puzzle_sync_result: List, end_heigth: int, puzzle_hash: str,  websocket: WebSocket):
-    await websocket.send_text(json.dumps({"coin": puzzle_sync_result, "heigth": end_heigth, "puzzle_hash": puzzle_hash}))
+    ph_32 = bytes32(bytes.fromhex(puzzle_hash))
+    item = ChiaSync.puzzle_hashes[ph_32]
+    item["heigth"] = end_heigth
+    ChiaSync.puzzle_hashes[ph_32] = item
+          
+    await websocket.send_text(json.dumps({"a":"sync", "coin": puzzle_sync_result, "heigth": end_heigth, "puzzle_hash": puzzle_hash}))
+
+async def send_new_block_height(peak_heigth: int):
+    await manager.broadcast(json.dumps({"a":"new_block_height",   "heigth": peak_heigth}))
+
+ChiaSync.peak_broadcast_callback= send_new_block_height
 
 @router.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket , client_id: str):
@@ -76,6 +87,15 @@ async def websocket_endpoint(websocket: WebSocket , client_id: str):
 
                 await get_full_coin_of_puzzle_hashes([[puzzle_hash, start_height]], \
                      ChiaSync.node_rpc_client, websocket, send_puzzle_sync_result, end_heigth=ChiaSync.peak())
+            elif action == "sync_all":
+                
+                for key in ChiaSync.puzzle_hashes:
+                    item = ChiaSync.puzzle_hashes[key]
+                    element = [item["puzzle_hash"].hex(), item["heigth"]]
+                    await get_full_coin_of_puzzle_hashes([element], \
+                     ChiaSync.node_rpc_client, websocket, send_puzzle_sync_result, end_heigth=ChiaSync.peak())
+
+                
 
 
         await websocket.close(code=200)

@@ -92,6 +92,7 @@ class ChiaSync:
     last_processed: float = 0
     slow_phs: set[bytes32] = set()
     state = None
+    peak_broadcast_callback = None
     staking_data = {}
  
     def start(state):
@@ -107,7 +108,7 @@ class ChiaSync:
                 ChiaSync.tokens_task.cancel()
         ChiaSync.tokens_task = asyncio.create_task(ChiaSync.load_tokens_loop()) 
 
-    def peak()-> BlockRecord:
+    def peak()-> int:
 
         if ChiaSync.blockchain_state is not None:
             if "peak" in ChiaSync.blockchain_state:
@@ -122,10 +123,13 @@ class ChiaSync:
                 last_peak = ChiaSync.peak()
                 ChiaSync.blockchain_state = await ChiaSync.node_rpc_client.get_blockchain_state()
                 print(f"blockchain height: { ChiaSync.peak() }")
+               
                 if ChiaSync.peak() > last_peak:
                     if last_peak == 0:
                          last_peak = ChiaSync.peak() - 5
                     asyncio.create_task(ChiaSync.check_stakin_coins())
+                    if(ChiaSync.peak_broadcast_callback  is not None):
+                        asyncio.create_task(ChiaSync.peak_broadcast_callback(ChiaSync.peak()))
                 
             except Exception as e:
                 print(f"exception: {e}")
@@ -257,6 +261,8 @@ class ChiaSync:
 
         ChiaSync.staking_data[month] = data
         return data
+    
+
 
 
     def close():
