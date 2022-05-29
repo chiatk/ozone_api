@@ -39,11 +39,13 @@ loop = asyncio.get_event_loop()
 
 async def send_puzzle_sync_result(puzzle_sync_result: List, end_heigth: int, puzzle_hash: str,  websocket: WebSocket):
     ph_32 = bytes32(bytes.fromhex(puzzle_hash))
-    item = ChiaSync.puzzle_hashes[ph_32]
-    item["heigth"] = end_heigth
-    ChiaSync.puzzle_hashes[ph_32] = item
-          
-    await websocket.send_text(json.dumps({"a":"sync", "coin": puzzle_sync_result, "heigth": end_heigth, "puzzle_hash": puzzle_hash}))
+    if ph_32 in ChiaSync.puzzle_hashes:
+
+        item = ChiaSync.puzzle_hashes[ph_32]
+        item["heigth"] = end_heigth
+        ChiaSync.puzzle_hashes[ph_32] = item
+            
+        await websocket.send_text(json.dumps({"a":"sync", "coin": puzzle_sync_result, "heigth": end_heigth, "puzzle_hash": puzzle_hash}))
 
 async def send_new_block_height(peak_heigth: int):
     await manager.broadcast(json.dumps({"a":"new_block_height",   "heigth": peak_heigth}))
