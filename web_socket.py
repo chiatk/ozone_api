@@ -1,3 +1,4 @@
+import asyncio
 import json
 from socket import socket
 import traceback
@@ -33,6 +34,7 @@ class ConnectionManager:
 manager = ConnectionManager()
 router = APIRouter()
 
+loop = asyncio.get_event_loop()
 
 
 async def send_puzzle_sync_result(puzzle_sync_result: List, end_heigth: int, puzzle_hash: str,  websocket: WebSocket):
@@ -85,17 +87,18 @@ async def websocket_endpoint(websocket: WebSocket , client_id: str):
 
                     ChiaSync.puzzle_hashes[puzzle_hash_32] = item
 
-                await get_full_coin_of_puzzle_hashes([[puzzle_hash, start_height]], \
-                     ChiaSync.node_rpc_client, websocket, send_puzzle_sync_result, end_heigth=ChiaSync.peak())
+                loop.create_task(get_full_coin_of_puzzle_hashes([[puzzle_hash, start_height]], \
+                     ChiaSync.node_rpc_client, websocket, send_puzzle_sync_result, end_heigth=ChiaSync.peak()))
             elif action == "sync_all":
                 
                 for key in ChiaSync.puzzle_hashes:
                     item = ChiaSync.puzzle_hashes[key]
                     clients_set = item["clients"]
                     if client_id in clients_set:
-                        element = [item["puzzle_hash"].hex(), item["heigth"]]
-                        await get_full_coin_of_puzzle_hashes([element], \
-                        ChiaSync.node_rpc_client, websocket, send_puzzle_sync_result, end_heigth=ChiaSync.peak())
+                        if ChiaSync.peak() > item["heigth"]:
+                            element = [item["puzzle_hash"].hex(), item["heigth"]]
+                            loop.create_task(get_full_coin_of_puzzle_hashes([element], \
+                            ChiaSync.node_rpc_client, websocket, send_puzzle_sync_result, end_heigth=ChiaSync.peak()))
  
 
         await websocket.close(code=200)
