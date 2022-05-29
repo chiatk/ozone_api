@@ -91,16 +91,26 @@ async def websocket_endpoint(websocket: WebSocket , client_id: str):
                 
                 for key in ChiaSync.puzzle_hashes:
                     item = ChiaSync.puzzle_hashes[key]
-                    element = [item["puzzle_hash"].hex(), item["heigth"]]
-                    await get_full_coin_of_puzzle_hashes([element], \
-                     ChiaSync.node_rpc_client, websocket, send_puzzle_sync_result, end_heigth=ChiaSync.peak())
-
-                
-
+                    clients_set = item["clients"]
+                    if client_id in clients_set:
+                        element = [item["puzzle_hash"].hex(), item["heigth"]]
+                        await get_full_coin_of_puzzle_hashes([element], \
+                        ChiaSync.node_rpc_client, websocket, send_puzzle_sync_result, end_heigth=ChiaSync.peak())
+ 
 
         await websocket.close(code=200)
     except Exception as e:
         error_stack = traceback.format_exc()
         print(f"Unexpected error in websocket_endpoint: {e} {error_stack}")
         manager.disconnect(websocket)
+        items  = ChiaSync.puzzle_hashes.copy()
+        for key in items:
+            item = items[key]
+            clients_set = item["clients"]
+            if client_id in clients_set:
+                
+                ChiaSync.puzzle_hashes.pop(key)
+                print(f"Removed client {client_id} from puzzle {key}")
+              
+
         
