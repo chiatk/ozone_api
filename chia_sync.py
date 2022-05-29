@@ -62,14 +62,28 @@ async def get_staking_coins(full_node_client: FullNodeRpcClient, month: int) -> 
             puzzle_hash:Optional[bytes32] = await get_sender_puzzle_hash_of_cat_coin(coin_record, full_node_client)
 
             create_date_time = datetime.datetime.utcfromtimestamp(coin_record.timestamp)
-            monts_delta = relativedelta(months=month)
-            payment_date_time = create_date_time + monts_delta
-            payment_date_time = payment_date_time.replace(hour=0, minute=0, second=0, microsecond=0)
+          
             if(coin_record.coin.amount<300000):
                 continue
-
-            posible_payment = (coin_record.coin.amount + (coin_record.coin.amount * (founded["percentage"]/100)))/1000
             amount = coin_record.coin.amount / 1000
+            inflacion = int(founded["percentage"]) / 365
+            diaria =(amount * inflacion) /  100
+            dias = 30
+            if( month == 1):
+                dias = 30
+            elif( month == 3):
+                dias = 30*3
+            elif( month == 6):
+                dias = 30*6
+            elif( month == 12):
+                dias = 365
+
+            monts_delta = datetime.timedelta(days = dias)
+            payment_date_time = create_date_time + monts_delta
+            payment_date_time = payment_date_time.replace(hour=0, minute=0, second=0, microsecond=0)
+ 
+           
+            posible_payment =  (dias * diaria) + amount
             coin_json = coin_record.to_json_dict()
             coin_json["name"] = coin_record.coin.name().hex()
             result.append([coin_json, {"withdrawal_puzzle_hash": puzzle_hash.hex(),\
