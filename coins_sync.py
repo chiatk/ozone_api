@@ -23,7 +23,7 @@ from chia.types.blockchain_format.sized_bytes import bytes32
 import traceback
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
-async def get_full_coin_of_puzzle_hashes(puzzle_hashes_data: List, full_node_client:FullNodeRpcClient,websocket: WebSocket, on_found, end_heigth: int, include_spent_coins:bool = True) :
+async def get_full_coin_of_puzzle_hashes(puzzle_hashes_data: List, full_node_client:FullNodeRpcClient,websocket: WebSocket, on_found, end_heigth: int, include_spent_coins:bool = True, client_id:str = "") :
     puzzle_hashes:List[Tuple[bytes32, int]] = []
     for puzzle_hash_hex in puzzle_hashes_data:
         touple_item :Tuple[bytes32, int] = (bytes32(bytes.fromhex(puzzle_hash_hex[0])), int(puzzle_hash_hex[1]))
@@ -49,7 +49,7 @@ async def get_full_coin_of_puzzle_hashes(puzzle_hashes_data: List, full_node_cli
             continue
     
     if len(coin_records) == 0:
-        print(f"no coin records found for {puzzle_hashes_data[0][0]}")
+        print(f"no coin records found for {puzzle_hashes_data[0][0]} {client_id}")
         await on_found([], end_heigth, puzzle_hashes_data[0][0],  websocket) 
         return   
     for row in coin_records:
@@ -64,12 +64,12 @@ async def get_full_coin_of_puzzle_hashes(puzzle_hashes_data: List, full_node_cli
                 
                 parent_coin: Optional[CoinRecord] = await full_node_client.get_coin_record_by_name(row.coin.parent_coin_info)
                 if parent_coin is None:
-                    logger.debug(f"Without parent coin: {row.coin.parent_coin_info}")
+                    logger.debug(f"Without parent coin: {row.coin.parent_coin_info} {client_id}")
                     await on_found([row.to_json_dict(), None], end_heigth, row.coin.puzzle_hash.hex(), websocket)  
                     continue
                 parent_coin_spend: Optional[CoinSpend] = await full_node_client.get_puzzle_and_solution(parent_coin.name, parent_coin.spent_block_index)
                 if parent_coin_spend is None:
-                    logger.debug(f"Without parent coin spend: {row.coin.parent_coin_info}")
+                    logger.debug(f"Without parent coin spend: {row.coin.parent_coin_info} {client_id}")
                     await on_found([row.to_json_dict(), None], end_heigth, row.coin.puzzle_hash.hex(),  websocket)  
                     continue   
                 await  on_found([row.to_json_dict(), parent_coin_spend.to_json_dict()], end_heigth, row.coin.puzzle_hash.hex(),  websocket)  

@@ -45,7 +45,10 @@ async def send_puzzle_sync_result(puzzle_sync_result: List, end_heigth: int, puz
         item["heigth"] = end_heigth
         ChiaSync.puzzle_hashes[ph_32] = item
             
-        await websocket.send_text(json.dumps({"a":"sync", "coin": puzzle_sync_result, "heigth": end_heigth, "puzzle_hash": puzzle_hash}))
+        try:
+            await websocket.send_text(json.dumps({"a":"sync", "coin": puzzle_sync_result, "heigth": end_heigth, "puzzle_hash": puzzle_hash}))
+        except Exception as e:
+            pass
 
 async def send_new_block_height(peak_heigth: int):
     await manager.broadcast(json.dumps({"a":"new_block_height",   "heigth": peak_heigth}))
@@ -89,8 +92,8 @@ async def websocket_endpoint(websocket: WebSocket , client_id: str):
 
                     ChiaSync.puzzle_hashes[puzzle_hash_32] = item
 
-                loop.create_task(get_full_coin_of_puzzle_hashes([[puzzle_hash, start_height]], \
-                     ChiaSync.node_rpc_client, websocket, send_puzzle_sync_result, end_heigth=ChiaSync.peak()))
+                loop.create_task (get_full_coin_of_puzzle_hashes([[puzzle_hash, start_height]], \
+                     ChiaSync.node_rpc_client, websocket, send_puzzle_sync_result, end_heigth=ChiaSync.peak(), client_id=client_id))
             elif action == "sync_all":
                 
                 for key in ChiaSync.puzzle_hashes:
@@ -99,8 +102,8 @@ async def websocket_endpoint(websocket: WebSocket , client_id: str):
                     if client_id in clients_set:
                         if ChiaSync.peak() > item["heigth"]:
                             element = [item["puzzle_hash"].hex(), item["heigth"]]
-                            loop.create_task(get_full_coin_of_puzzle_hashes([element], \
-                            ChiaSync.node_rpc_client, websocket, send_puzzle_sync_result, end_heigth=ChiaSync.peak()))
+                            loop.create_task (get_full_coin_of_puzzle_hashes([element], \
+                            ChiaSync.node_rpc_client, websocket, send_puzzle_sync_result, end_heigth=ChiaSync.peak(), client_id=client_id))
  
 
         await websocket.close(code=200)
