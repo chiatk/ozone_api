@@ -1,5 +1,0 @@
-wallet_fingerprint: 4267537656
-wallet_id: 2
-wallet_rpc_port: 9256
-node_rpc_port: 58444
-wallet_root_config: /home/mquevedo/.chia_wallet/mainnet

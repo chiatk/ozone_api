@@ -37,6 +37,8 @@ async def get_full_node_client() -> FullNodeRpcClient:
                                                       settings.CHIA_ROOT_PATH, settings.CHIA_CONFIG)
     return full_node_client
 
+def transaction_processed( coin_name: str):
+        return os.path.exists(f"./delivers/sent/{coin_name}.json") or os.path.exists(f"./delivers/active/{coin_name}.json") or os.path.exists(f"./delivers/fails/{coin_name}.json")
 
 async def get_staking_coins(full_node_client: FullNodeRpcClient, month: int) -> List:
     with open('staking_list.json') as json_file:
@@ -59,6 +61,10 @@ async def get_staking_coins(full_node_client: FullNodeRpcClient, month: int) -> 
         from cat_utils import get_sender_puzzle_hash_of_cat_coin
         for item in records:
             coin_record: CoinRecord = item
+            if transaction_processed(coin_record.name.hex()):
+                print(f"Coin alredy sent {coin_record.name.hex()}")
+                continue
+
             puzzle_hash:Optional[bytes32] = await get_sender_puzzle_hash_of_cat_coin(coin_record, full_node_client)
 
             create_date_time = datetime.datetime.utcfromtimestamp(coin_record.timestamp)
