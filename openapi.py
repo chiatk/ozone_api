@@ -2,6 +2,7 @@ import datetime
 import os
 import json
 from typing import List, Optional, Dict, Tuple
+import aioredis
 import logzero
 from logzero import logger
 from fastapi import FastAPI, APIRouter, Request, Body, Depends, HTTPException
@@ -37,6 +38,7 @@ if not os.path.exists(log_dir):
     os.mkdir(log_dir)
 
 logzero.logfile(os.path.join(log_dir, "api.log"))
+LOCAL_REDIS_URL = "redis://127.0.0.1:6379"
 
 
 async def get_full_node_client() -> FullNodeRpcClient:
@@ -51,7 +53,7 @@ async def startup():
     app.state.client = await get_full_node_client()
    
     await app.state.client.get_blockchain_state()
-
+    app.state.redis = aioredis.from_url(os.environ.get("REDIS_URL", LOCAL_REDIS_URL), encoding="utf8", decode_responses=True)
     ChiaSync.start(app.state)
 
 

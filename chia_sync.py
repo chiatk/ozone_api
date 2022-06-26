@@ -62,7 +62,7 @@ async def get_staking_coins(full_node_client: FullNodeRpcClient, month: int) -> 
         for item in records:
             coin_record: CoinRecord = item
             if transaction_processed(coin_record.name.hex()):
-                print(f"Coin alredy sent {coin_record.name.hex()}")
+                #print(f"Coin alredy sent {coin_record.name.hex()}")
                 continue
 
             puzzle_hash:Optional[bytes32] = await get_sender_puzzle_hash_of_cat_coin(coin_record, full_node_client)

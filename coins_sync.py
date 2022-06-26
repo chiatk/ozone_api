@@ -23,34 +23,21 @@ from chia.types.blockchain_format.sized_bytes import bytes32
 import traceback
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
-async def get_full_coin_of_puzzle_hashes(puzzle_hashes_data: List, full_node_client:FullNodeRpcClient,websocket: WebSocket, on_found, end_heigth: int, include_spent_coins:bool = True, client_id:str = "") :
-    puzzle_hashes:List[Tuple[bytes32, int]] = []
+async def get_full_coin_of_puzzle_hashes(puzzle_hashes_data: List, full_node_client:FullNodeRpcClient,websocket: WebSocket, on_found, end_heigth: int, include_spent_coins:bool = True, client_id:str = "", start_height=0) :
+    puzzle_hashes:List[bytes32] = []
     for puzzle_hash_hex in puzzle_hashes_data:
-        touple_item :Tuple[bytes32, int] = (bytes32(bytes.fromhex(puzzle_hash_hex[0])), int(puzzle_hash_hex[1]))
-        puzzle_hashes.append(touple_item)
+        #touple_item :Tuple[bytes32, int] = (bytes32(bytes.fromhex(puzzle_hash_hex[0])), int(puzzle_hash_hex[1]))
+        puzzle_hashes.append(bytes32(bytes.fromhex(puzzle_hash_hex[0])))
  
     coin_records:List[CoinRecord] = []
-    for puzzle_hash_item in puzzle_hashes:
-        try:
-            puzzle_hash, start_height = puzzle_hash_item
-            if start_height == 0:
-                start_height = 32
-          
-            records = await full_node_client.get_coin_records_by_puzzle_hash(puzzle_hash=puzzle_hash,\
-            include_spent_coins=include_spent_coins,   start_height=start_height-32)
-            for r in records:
-                coin_records.append(r)
-           
-        except Exception as e:
-            logger.debug(f"puzzle_hash: {puzzle_hash_item}")
-            logger.exception(e)
-            print(e)
-            
-            continue
+
+    coin_records = await full_node_client.get_coin_records_by_puzzle_hashes(puzzle_hashes, \
+        include_spent_coins=include_spent_coins,   start_height=start_height)
+    
     
     if len(coin_records) == 0:
         print(f"no coin records found for {puzzle_hashes_data[0][0]} {client_id}")
-        await on_found([], end_heigth, puzzle_hashes_data[0][0],  websocket) 
+        #await on_found([], end_heigth, puzzle_hashes_data[0][0],  websocket) 
         return   
     for row in coin_records:
         try:
