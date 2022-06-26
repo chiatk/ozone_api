@@ -146,17 +146,20 @@ class StakingBackground:
                 wallet_synced = await self.wallet_rpc_client.get_synced()
                 if not wallet_synced:
                     print(f"Wallet not sync, waiting")
-                    await asyncio.sleep(10)
+                    await asyncio.sleep(60)
                     continue
                 print("executing worker")
                 await self.worker_fn()
             except Exception as e:
                 print(f"exception: {e}")
-
+            now  = datetime.datetime.utcfromtimestamp(time.time())
+            if now.hour>3:
+                print("sleep 1 hour....")
+                await asyncio.sleep(60*60)
             await asyncio.sleep(10)
 
     def get_confirmation_security_threshold(self):
-        return 16
+        return 8
     
     async def worker_fn(self):
 
@@ -288,7 +291,7 @@ class StakingBackground:
         if extra is not None:
             json_data.update(extra)
         with open(f"./delivers/active/{coin_name}.json", "w") as outfile:
-            json.dump(json_data, outfile)
+            json.dump(json_data, outfile, indent=4)
 
     async def delete_active_file(self, coin_name:str):
         move_dir(f"./delivers/active/{coin_name}.json", f"./delivers/fails/{coin_name}.json")
