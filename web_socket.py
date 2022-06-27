@@ -101,9 +101,9 @@ async def websocket_endpoint(websocket: WebSocket , client_id: str):
             elif action == "add_puzzlehash_list"  :
                 ph_list = data["list"]
                 for ph_data in ph_list:
-                    puzzle_hash_32 = bytes32(bytes.fromhex(ph_data["puzzle_hash"]))
-                    puzzle_hash = ph_data["puzzle_hash"]
-                    start_height = ph_data["start_height"]
+                    puzzle_hash_32 = bytes32(bytes.fromhex(ph_data["ph"]))
+                    puzzle_hash = ph_data["ph"]
+                    start_height = ph_data["sh"]
                     
                 
                     if puzzle_hash_32 not in ChiaSync.puzzle_hashes:
@@ -143,9 +143,28 @@ async def websocket_endpoint(websocket: WebSocket , client_id: str):
                     for start_height in keys:
 
                         ph_list =  puzzle_map_list[start_height]
-                        await  (get_full_coin_of_puzzle_hashes(ph_list, \
+                        flag = True
+                        next_scan: List = []
+                        SIZE = 100
+
+                        while flag:
+
+                            if len(ph_list) > SIZE:
+                                next_scan = ph_list[:SIZE]
+                                ph_list = ph_list[SIZE:]
+                            else:
+                                next_scan = ph_list
+                                flag = False
+
+                            print(f'Scanning for PuzzleHashes {len(next_scan)}')
+                            await  (get_full_coin_of_puzzle_hashes(next_scan, \
                                 ChiaSync.node_rpc_client, websocket, send_puzzle_sync_result,\
                                      end_heigth=peak, client_id=client_id, start_height=start_height))
+
+                            
+
+                        
+                        
                     
                 
                     await send_synced_block_height(websocket, peak)

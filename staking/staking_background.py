@@ -153,9 +153,9 @@ class StakingBackground:
             except Exception as e:
                 print(f"exception: {e}")
             now  = datetime.datetime.utcfromtimestamp(time.time())
-            if now.hour>3:
-                print("sleep 1 hour....")
-                await asyncio.sleep(60*60)
+            # if now.hour>3:
+            #     print("sleep 1 hour....")
+            #     await asyncio.sleep(60*60)
             await asyncio.sleep(10)
 
     def get_confirmation_security_threshold(self):

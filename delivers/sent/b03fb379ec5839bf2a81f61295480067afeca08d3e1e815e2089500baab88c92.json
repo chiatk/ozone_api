@@ -1,0 +1,24 @@
+{
+    "coin": "b03fb379ec5839bf2a81f61295480067afeca08d3e1e815e2089500baab88c92",
+    "trxn_id": "802609ce5eeadd65d68887b0fec7d398be167686784edec6631420de9168a524",
+    "coins": [
+        {
+            "parent_coin_info": "0x6ec57cf8c7433879de52edea28a52d4a9bd018a3a8ecf4b9a1f3e6d4604ac18a",
+            "puzzle_hash": "0x7c71619ee24f51aca50f9b36f604d81a47e1c50e14a25c38a393175409214e07",
+            "amount": 536986,
+            "id": "5abde655f73145ef7e5c7b93ec962d33aaaad63babe7c41c3d7e205913c7599c"
+        },
+        {
+            "parent_coin_info": "0x6ec57cf8c7433879de52edea28a52d4a9bd018a3a8ecf4b9a1f3e6d4604ac18a",
+            "puzzle_hash": "0xb6af8157e57a7decccf3182f972158fbcfae7fe44c6b68afa0493b10ca109a46",
+            "amount": 719449909,
+            "id": "706ac5f8d9769d28cd3afc5b589125e7339ca1e2fa846b498ed45af82609e7c7"
+        }
+    ],
+    "withdrawal_puzzle_hash": "3a84932248306cea3351ef44c1ef1623dacc0c75365ffca2421273238aa98ca9",
+    "withdrawal_address": "xch182zfxgjgxpkw5v63aazvrmcky0dvcrr4xe0legjzzfej8z4f3j5s9vxdja",
+    "withdrawal_date_time": "2022-06-27 00:00:00",
+    "create_date_time": "2022-05-28 14:27:42",
+    "amount": 500.0,
+    "posible_withdrawal": 536.986301369863
+}
