@@ -230,7 +230,7 @@ class StakingBackground:
                         if(now >= wallet_data[1]["withdrawal_date_time"]):
                             amount = wallet_data[1]["posible_withdrawal"]
                             spendable_balance = await self.spendable_balance()
-                            if spendable_balance>= amount and amount > 300.0:
+                            if spendable_balance>= amount and amount >= 300.0:
                                 print(coin_name)
                                 await self.create_active_file(coin_name.hex(),"0xff" )
                                 try:

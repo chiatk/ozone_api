@@ -6,7 +6,7 @@ from typing import List
 
 from fastapi import APIRouter
  
-from starlette.websockets import WebSocket, WebSocketDisconnect
+from starlette.websockets import WebSocket, WebSocketState
 from chia_sync import ChiaSync
 from chia.types.blockchain_format.sized_bytes import bytes32
 from coins_sync import get_full_coin_of_puzzle_hashes
@@ -28,7 +28,11 @@ class ConnectionManager:
 
     async def broadcast(self, message: str):
         for connection in self.active_connections:
-            await connection.send_text(message)
+            try:
+                if connection.client_state == WebSocketState.CONNECTED:
+                    await connection.send_text(message)
+            except Exception as e:
+                pass
 
 
 manager = ConnectionManager()
@@ -55,8 +59,8 @@ async def send_puzzle_sync_result(puzzle_sync_result: List, end_heigth: int, puz
 async def send_new_block_height(peak_heigth: int):
     await manager.broadcast(json.dumps({"a":"new_block_height",   "heigth": peak_heigth}))
 
-async def send_synced_block_height(websocket: WebSocket, peak_heigth: int):
-    await manager.broadcast(json.dumps({"a":"new_synced_block_height",   "heigth": peak_heigth}))
+async def send_synced_block_height(websocket: WebSocket, peak_heigth: int, ph_str_list: List[str]):
+    await manager.broadcast(json.dumps({"a":"new_synced_block_height",   "heigth": peak_heigth, "phs":ph_str_list}))
 
 ChiaSync.peak_broadcast_callback= send_new_block_height
 
@@ -125,6 +129,7 @@ async def websocket_endpoint(websocket: WebSocket , client_id: str):
             elif action == "sync_all":
               
                 try:
+                    ph_str_list = []
                     peak = ChiaSync.peak()
                     puzzle_map_list = {}
                     for key in ChiaSync.puzzle_hashes:
@@ -143,6 +148,8 @@ async def websocket_endpoint(websocket: WebSocket , client_id: str):
                     for start_height in keys:
 
                         ph_list =  puzzle_map_list[start_height]
+                        
+
                         flag = True
                         next_scan: List = []
                         SIZE = 100
@@ -156,18 +163,15 @@ async def websocket_endpoint(websocket: WebSocket , client_id: str):
                                 next_scan = ph_list
                                 flag = False
 
+                            for ph in next_scan:
+                                ph_str_list.append(ph[0])
+
                             print(f'Scanning for PuzzleHashes {len(next_scan)}')
                             await  (get_full_coin_of_puzzle_hashes(next_scan, \
                                 ChiaSync.node_rpc_client, websocket, send_puzzle_sync_result,\
                                      end_heigth=peak, client_id=client_id, start_height=start_height))
-
-                            
-
-                        
-                        
-                    
-                
-                    await send_synced_block_height(websocket, peak)
+                    print(f'Sending PuzzleHashes {len(ph_str_list)}')
+                    await send_synced_block_height(websocket, peak, ph_str_list)
                     
                 except Exception as e:
                     print(e)
