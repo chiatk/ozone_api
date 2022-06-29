@@ -31,8 +31,12 @@ async def get_full_coin_of_puzzle_hashes(puzzle_hashes_data: List, full_node_cli
  
     coin_records:List[CoinRecord] = []
 
+    start_height_1 = start_height - 32
+    if start_height_1 <0:
+        start_height_1 = 0
+
     coin_records = await full_node_client.get_coin_records_by_puzzle_hashes(puzzle_hashes, \
-        include_spent_coins=include_spent_coins,   start_height=start_height)
+        include_spent_coins=include_spent_coins, start_height=start_height_1)
     
     
     if len(coin_records) == 0:

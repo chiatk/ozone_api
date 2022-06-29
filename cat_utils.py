@@ -32,6 +32,7 @@ from chia.consensus.default_constants import DEFAULT_CONSTANTS
 from chia.consensus.cost_calculator import NPCResult
 from chia.full_node.mempool import Mempool
  
+ 
 
 async def get_sender_puzzle_hash_of_cat_coin(coin_record: CoinRecord, node_client: FullNodeRpcClient) -> Optional[bytes32]:
     """
@@ -57,17 +58,51 @@ async def get_sender_puzzle_hash_of_cat_coin(coin_record: CoinRecord, node_clien
         
     return None
 
+async def get_inner_puzzle_hash_of_coin(coin_record: CoinRecord, node_client: FullNodeRpcClient) -> Optional[bytes32]:
+    """
+    Get the inner puzzle hash  of the cat coin.
+    First obtain the parent coin, then, get the parent coin spend.
+    When the coin spend is found, get the puzzle_reveal, uncurry it, get the mod and the arguments
+    get the arguments, take the second argument and get the puzzle hash of the sender.
+
+    """ 
+    parent_coin: Optional[CoinRecord] = await node_client.get_coin_record_by_name(coin_record.coin.parent_coin_info)
+    parent_coin_spend: Optional[CoinSpend] = await node_client.get_puzzle_and_solution(parent_coin.name, parent_coin.spent_block_index)
+    puzzle_reveal: SerializedProgram = parent_coin_spend.puzzle_reveal
+    solution_program =parent_coin_spend.solution.to_program()
+    solution = list(solution_program.as_iter())
+
+    mod, curried_args = puzzle_reveal.uncurry()
+    if mod == CAT_MOD:
+        arguments = list(curried_args.as_iter())
+        puzzle= arguments[2]
+        puzzle_hash = puzzle.get_tree_hash()
+        return puzzle_hash
+      
+    else:
+        print(f"{coin_record.coin.name.hex()} is not a cat coin")
+    
+    return None
+
 async def main():
     node_client = await get_full_node_client()
-    coin_name = bytes32(bytes.fromhex('4743474f3bcd85039b6c4c98d94ceaaa6684ae1aa6a2eb8f3119f1fdf11334d7'))
+    coin_name = bytes32(bytes.fromhex('45b797e4f70164d670a7379624186ca9249e2f9459fd8ad431789836d427d754'))
     coin = await node_client.get_coin_record_by_name(coin_name)
     sender_puzzle_hash =  await get_sender_puzzle_hash_of_cat_coin(coin, node_client)
+    
 
     sender_address = encode_puzzle_hash(sender_puzzle_hash, "xch")
     print(f"Sender address: {sender_address}")
 
+    # inner_puzzle_hash =  await get_inner_puzzle_hash_of_coin(coin, node_client)
+
+    # sender_address = encode_puzzle_hash(inner_puzzle_hash, "xch")
+    # print(f"Inner address: {sender_address}")
+
     node_client.close()
     await node_client.await_closed()
+
+   
     
     
 
