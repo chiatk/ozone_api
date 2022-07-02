@@ -23,3 +23,5 @@ Thanks to the contributions of [Goby Open API](https://github.com/GobyWallet/ope
 ## Intall python dateutil
 
 sudo pip install python-dateutil --upgrade
+
+pip3 install websockets==10.1

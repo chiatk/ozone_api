@@ -16,6 +16,7 @@ from chia.types.coin_spend import CoinSpend
 from cat_data import CatData
 from cat_utils import get_sender_puzzle_hash_of_cat_coin
 from chia_sync import ChiaSync
+from coins_sync import get_full_coin_by_name
 import config as settings
 from chia.util.byte_types import hexstr_to_bytes
 from chia.types.coin_record import CoinRecord
@@ -341,6 +342,64 @@ async def get_utxos(  request: Request, item=Body({}),):
                 
                 continue
             result.append(records.to_json_dict())
+           
+        except Exception as e:
+            logger.exception(e)
+            print(traceback.format_exc())
+            print(e)
+            print(f"puzzle_hash: {name}")
+            continue
+     
+    return {"coins":result } 
+
+
+@router.post("/get_full_coin_by_names", response_model=dict)
+#@cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_cat_coins_by_outer_puzzle_hashes:{kwargs['item']}", alias='default')
+async def get_full_coin_by_name_api(  request: Request, item=Body({}),):
+    # todo: use blocke indexer and supoort unconfirmed param
+  
+    names:List[bytes32] = []
+    for puzzle_hash_hex in item['coins']:
+        coin_name  = bytes32(bytes.fromhex(puzzle_hash_hex))
+        names.append(coin_name)
+
+    full_node_client = request.app.state.client
+    result = []
+    for name in names:
+        try:
+             
+             
+            records = await get_full_coin_by_name(name, full_node_client)
+            result.append(records)
+           
+        except Exception as e:
+            logger.exception(e)
+            print(traceback.format_exc())
+            print(e)
+            print(f"puzzle_hash: {name}")
+            continue
+     
+    return {"coins":result } 
+
+
+@router.post("/get_full_nft_coin_by_names", response_model=dict)
+#@cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_cat_coins_by_outer_puzzle_hashes:{kwargs['item']}", alias='default')
+async def get_full_coin_by_name_api(  request: Request, item=Body({}),):
+    # todo: use blocke indexer and supoort unconfirmed param
+  
+    names:List[bytes32] = []
+    for nft_name in item['names']:
+        coin_name  =  decode_puzzle_hash(nft_name)
+        names.append(coin_name)
+
+    full_node_client = request.app.state.client
+    result = []
+    for name in names:
+        try:
+             
+             
+            records = await get_full_coin_by_name(name, full_node_client)
+            result.append(records)
            
         except Exception as e:
             logger.exception(e)

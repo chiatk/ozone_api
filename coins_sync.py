@@ -72,3 +72,34 @@ async def get_full_coin_of_puzzle_hashes(puzzle_hashes_data: List, full_node_cli
             continue 
   
  
+
+async def get_full_coin_by_name(coin_id: bytes32, full_node_client:FullNodeRpcClient ) :
+   
+
+    coin_record:Optional[CoinRecord] = await full_node_client.get_coin_record_by_name   (coin_id)
+     
+    if coin_record is None:
+        print(f"Coin not found {coin_id.hex()}")
+        return None
+   
+    try:
+        parent_coin: Optional[CoinRecord] = await full_node_client.get_coin_record_by_name(coin_record.coin.parent_coin_info)
+        if parent_coin is None:
+            logger.debug(f"Without parent coin: {coin_record.coin.parent_coin_info} ")
+            return [coin_record.to_json_dict(), None]
+             
+        parent_coin_spend: Optional[CoinSpend] = await full_node_client.get_puzzle_and_solution(parent_coin.name, parent_coin.spent_block_index)
+        if parent_coin_spend is None:
+            logger.debug(f"Without parent coin spend: {coin_record.coin.parent_coin_info}  ") 
+            return [coin_record.to_json_dict(), None]
+                
+        
+        return [coin_record.to_json_dict(), parent_coin_spend.to_json_dict()]
+    except Exception as e:
+        logger.exception(e)
+        logger.debug(coin_record) 
+        logger.exception(traceback.format_exc())
+        
+        return None 
+  
+ 
