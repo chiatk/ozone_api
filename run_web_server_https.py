@@ -12,7 +12,7 @@ import uvicorn
 if __name__ == '__main__':
     print('PyCharm')
  
-    uvicorn.run("openapi:app", host="0.0.0.0", port=8000, log_level="info", reload=False,\
+    uvicorn.run("ozoneapi.api:app", host="0.0.0.0", port=8000, log_level="info", reload=False,\
          ssl_keyfile="/home/mquevedo/ozone_testnet.key", ssl_certfile="/home/mquevedo/ozone_testnet.crt")
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
