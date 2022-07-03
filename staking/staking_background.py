@@ -46,7 +46,7 @@ async def get_staking_coins(full_node_client: FullNodeRpcClient, founded: Option
                     include_spent_coins=True,   start_height=1953631)
 
         result = []
-        from cat_utils import get_sender_puzzle_hash_of_cat_coin
+        from ozoneapi.cat_utils import get_sender_puzzle_hash_of_cat_coin
         for item in records:
             coin_record: CoinRecord = item
             puzzle_hash:Optional[bytes32] = await get_sender_puzzle_hash_of_cat_coin(coin_record, full_node_client)

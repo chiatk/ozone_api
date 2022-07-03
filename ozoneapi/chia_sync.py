@@ -19,10 +19,10 @@ from chia.util.bech32m import encode_puzzle_hash, decode_puzzle_hash as inner_de
 from chia.types.spend_bundle import SpendBundle
 from chia.types.coin_spend import CoinSpend
 from chia.consensus.block_record import BlockRecord
-from cat_data import CatData
+from ozoneapi.cat_data import CatData
 
  
-import config as settings
+import ozoneapi.config as settings
 from chia.util.byte_types import hexstr_to_bytes
 from chia.types.coin_record import CoinRecord
 from chia.types.blockchain_format.sized_bytes import bytes32
@@ -58,7 +58,7 @@ async def get_staking_coins(full_node_client: FullNodeRpcClient, month: int) -> 
                     include_spent_coins=True,   start_height=1953631)
 
         result = []
-        from cat_utils import get_sender_puzzle_hash_of_cat_coin
+        from ozoneapi.cat_utils import get_sender_puzzle_hash_of_cat_coin
         for item in records:
             coin_record: CoinRecord = item
             if transaction_processed(coin_record.name.hex()):

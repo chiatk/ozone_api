@@ -29,7 +29,7 @@ def string_to_path(pkg_or_path: Union[str, pathlib.Path]) -> pathlib.Path:
 def load_serialized_clvm(
     clvm_filename,
     package_or_requirement=None,
-    search_paths=["openapi.clsp.include"],
+    search_paths=["ozoneapi.clsp.include"],
 ) -> str:
     """
     This function takes a chialisp file in the given package and compiles it to a
@@ -63,7 +63,7 @@ def load_serialized_clvm(
     return clvm_hex
 
 
-def load_clvm(clvm_filename, package_or_requirement="openapi.clsp", search_paths=["openapi.clsp.include"]) -> Program:
+def load_clvm(clvm_filename, package_or_requirement="ozoneapi.clsp", search_paths=["ozoneapi.clsp.include"]) -> Program:
     if package_or_requirement is None:
         module_name = inspect.getmodule(inspect.stack()[1][0])
         if module_name is not None:

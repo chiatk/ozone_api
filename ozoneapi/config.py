@@ -1,5 +1,13 @@
+import os
+from pathlib import Path
+
+from chia.util.default_root import DEFAULT_ROOT_PATH
+from chia.util.config import load_config
+
 
 SECONDS_PER_BLOCK = (24 * 3600) / 4608
+
+
 
 CACHE_CONFIG = {
     'default': {
@@ -13,6 +21,10 @@ CACHE_CONFIG = {
     #     'password': '',
     # }
 }
+
+
+CHIA_ROOT_PATH = Path(os.environ.get('CHIA_ROOT_PATH'))
+CHIA_CONFIG = load_config(DEFAULT_ROOT_PATH, "config.yaml")
 
 LOG_LEVEL = "DEBUG"
 

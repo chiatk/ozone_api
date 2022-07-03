@@ -17,9 +17,9 @@ from chia.util.bech32m import encode_puzzle_hash, decode_puzzle_hash as inner_de
 from chia.types.spend_bundle import SpendBundle
 from chia.types.coin_spend import CoinSpend
 from chia.consensus.block_record import BlockRecord
-from cat_data import CatData
-from chia_sync import get_full_node_client
-import config as settings
+from ozoneapi.api import get_full_node_client
+from ozoneapi.cat_data import CatData 
+import ozoneapi.config as settings
 from chia.util.byte_types import hexstr_to_bytes
 from chia.types.coin_record import CoinRecord
 from chia.types.blockchain_format.sized_bytes import bytes32

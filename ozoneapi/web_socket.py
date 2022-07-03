@@ -7,9 +7,11 @@ from typing import List
 from fastapi import APIRouter
  
 from starlette.websockets import WebSocket, WebSocketState
-from chia_sync import ChiaSync
+from ozoneapi.chia_sync import ChiaSync
 from chia.types.blockchain_format.sized_bytes import bytes32
-from coins_sync import get_full_coin_of_puzzle_hashes
+
+from ozoneapi.coins_sync import get_full_coin_of_puzzle_hashes
+ 
  
 
 class ConnectionManager:

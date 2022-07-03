@@ -14,14 +14,18 @@ from chia.rpc.full_node_rpc_client import FullNodeRpcClient
 from chia.util.bech32m import encode_puzzle_hash, decode_puzzle_hash as inner_decode_puzzle_hash
 from chia.types.spend_bundle import SpendBundle
 from chia.types.coin_spend import CoinSpend
-from cat_data import CatData
-from chia_sync import ChiaSync
-import config as settings
+from ozoneapi.cat_data import CatData
+from ozoneapi.chia_sync import ChiaSync
+import ozoneapi.config as settings
 from chia.util.byte_types import hexstr_to_bytes
 from chia.types.coin_record import CoinRecord
 from chia.types.blockchain_format.sized_bytes import bytes32
 import traceback
 from starlette.websockets import WebSocket, WebSocketDisconnect
+
+from ozoneapi.sync import handle_coin
+ 
+ 
 
 async def get_full_coin_of_puzzle_hashes(puzzle_hashes_data: List, full_node_client:FullNodeRpcClient,websocket: WebSocket, on_found, end_heigth: int, include_spent_coins:bool = True, client_id:str = "", start_height=0) :
     puzzle_hashes:List[bytes32] = []
@@ -62,7 +66,9 @@ async def get_full_coin_of_puzzle_hashes(puzzle_hashes_data: List, full_node_cli
                 if parent_coin_spend is None:
                     logger.debug(f"Without parent coin spend: {row.coin.parent_coin_info} {client_id}")
                     await on_found([row.to_json_dict(), None], end_heigth, row.coin.puzzle_hash.hex(),  websocket)  
-                    continue   
+                    continue 
+                address = encode_puzzle_hash(row.coin.puzzle_hash, "xch")  
+                assets = handle_coin(address,row, parent_coin_spend )
                 await  on_found([row.to_json_dict(), parent_coin_spend.to_json_dict()], end_heigth, row.coin.puzzle_hash.hex(),  websocket)  
         except Exception as e:
             logger.exception(e)

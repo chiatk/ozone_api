@@ -41,7 +41,7 @@
             "request": "launch",
             "module": "uvicorn",
             "args": [
-                "openapi:app",
+                "ozoneapi:app",
                 "--reload",
                 "--port",
                 "8000"

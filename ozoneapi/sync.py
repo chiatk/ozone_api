@@ -1,16 +1,18 @@
 import logging
 import asyncio
+from unittest import result
 from aiocache import caches
+
+from ozoneapi.db import Asset
 from .utils import hexstr_to_bytes, coin_name, to_hex
 from .types import Coin
-from .db import (
-    Asset, get_db, get_sync_height_from_db, save_asset, get_unspent_asset_coin_ids,
-    update_asset_coin_spent_height,
-)
-
+ 
 from .did import get_did_info_from_coin_spend
 from .nft import get_nft_info_from_coin_spend
 from .rpc_client import FullNodeRpcClient
+
+from chia.types.coin_record import CoinRecord
+from chia.types.coin_spend import CoinSpend
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,8 @@ async def set_sync_height(chain_id, address: bytes, height: int):
     await cache.set(key, height, ttl=3600*24*3)
 
 
-async def handle_coin(address, coin_record, parent_coin_spend, db):
+async def handle_coin(address: str, coin_record: CoinRecord, parent_coin_spend: CoinSpend):
+    result =[]
     coin = Coin.from_json_dict(coin_record['coin'])
     logger.debug('handle coin: %s', coin.name().hex())
     did_info = get_did_info_from_coin_spend(coin, parent_coin_spend, address)
@@ -52,7 +55,8 @@ async def handle_coin(address, coin_record, parent_coin_spend, db):
             curried_params=curried_params,
         )
 
-        await save_asset(db, asset)
+        #await save_asset(db, asset)
+        result.append(asset)
         logger.debug('new asset, type: %s, id: %s', asset.asset_type, asset.asset_id.hex())
         return
 
@@ -76,9 +80,10 @@ async def handle_coin(address, coin_record, parent_coin_spend, db):
             lineage_proof=lineage_proof.to_json_dict(),
             curried_params=curried_params
         )
-        await save_asset(db, asset)
+        #await save_asset(db, asset)
+        result.append(asset)
         logger.info('new asset, address: %s, type: %s, id: %s', address.hex(), asset.asset_type, asset.asset_id.hex())
-        return
+        return result
 
 
 async def sync_user_assets(chain_id, address: bytes, client: FullNodeRpcClient):
@@ -86,10 +91,10 @@ async def sync_user_assets(chain_id, address: bytes, client: FullNodeRpcClient):
     sync did / nft by https://docs.chia.net/docs/12rpcs/full_node_api/#get_coin_records_by_hint
     """
     # todo: use singleflight or use special process to sync
-    db = get_db(chain_id)
+   
     start_height = await get_sync_height(chain_id, address)
     if not start_height:
-        start_height = await get_sync_height_from_db(db, address)
+        start_height = 0
 
     end_height = (await client.get_block_number()) - DELAY_BLOCK
     if start_height >= end_height:
@@ -98,12 +103,12 @@ async def sync_user_assets(chain_id, address: bytes, client: FullNodeRpcClient):
     logger.debug('chain: %s, address: %s, sync from %d to %d', chain_id, address.hex(), start_height, end_height)
 
     # check did and nft coins has been spent
-    unspent_coin_ids = await get_unspent_asset_coin_ids(db)
+    unspent_coin_ids = []
     for cr in await client.get_coin_records_by_names(unspent_coin_ids, include_spent_coins=True):
         spent_height = cr['spent_block_index']
         if spent_height == 0:
             continue
-        await update_asset_coin_spent_height(db, coin_name(**cr['coin']), spent_height)
+       # await update_asset_coin_spent_height(db, coin_name(**cr['coin']), spent_height)
 
     coin_records = await client.get_coin_records_by_hint(
         address, include_spent_coins=False, start_height=start_height, end_height=end_height)
@@ -116,6 +121,6 @@ async def sync_user_assets(chain_id, address: bytes, client: FullNodeRpcClient):
         ])
 
         for coin_record, parent_coin_spend in zip(coin_records, pz_and_solutions):
-            await handle_coin(address, coin_record, parent_coin_spend, db)
+            await handle_coin(address, coin_record, parent_coin_spend)
 
     await set_sync_height(chain_id, address, end_height)
