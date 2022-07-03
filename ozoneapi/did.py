@@ -3,6 +3,9 @@ import asyncio
 from aiocache import caches
 from typing import Dict
 from .types import Program, Coin, LineageProof
+from chia.types.coin_record import CoinRecord
+from chia.types.coin_spend import CoinSpend
+
 from .puzzles import (
     SINGLETON_TOP_LAYER_MOD, SINGLETON_TOP_LAYER_MOD_HASH,
     SINGLETON_LAUNCHER_MOD_HASH,
@@ -44,9 +47,9 @@ def program_to_metadata(program: Program) -> Dict:
     return metadata
 
 
-def get_did_info_from_coin_spend(coin: Coin, parent_cs: dict, address: bytes):
-    parent_coin = Coin.from_json_dict(parent_cs['coin'])
-    puzzle = Program.fromhex(parent_cs['puzzle_reveal'])
+def get_did_info_from_coin_spend(coin: Coin, parent_cs: CoinSpend, address: bytes):
+    parent_coin =parent_cs.coin
+    puzzle = parent_cs.puzzle_reveal
 
     try:
         mod, curried_args_pz = puzzle.uncurry()

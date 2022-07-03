@@ -9,6 +9,8 @@ from clvm.casts import int_from_bytes
 
 from .puzzles import SINGLETON_TOP_LAYER_MOD, NFT_STATE_LAYER_MOD, NFT_OWNERSHIP_LAYER
 from .types import Coin, Program, LineageProof
+from chia.types.coin_record import CoinRecord
+from chia.types.coin_spend import CoinSpend
 
 
 logger = logging.getLogger(__name__)
@@ -312,8 +314,8 @@ def get_new_owner_did(unft: UncurriedNFT, solution: Program) -> Optional[bytes32
     return new_did_id
  
 
-def get_nft_info_from_coin_spend(nft_coin: Coin, parent_cs: dict, address: bytes):
-    puzzle = Program.fromhex(parent_cs['puzzle_reveal'])
+def get_nft_info_from_coin_spend(nft_coin: Coin, parent_cs: CoinSpend, address: bytes):
+    puzzle = parent_cs.puzzle_reveal
     try:
         uncurried_nft = UncurriedNFT.uncurry(puzzle)
     except Exception as e:

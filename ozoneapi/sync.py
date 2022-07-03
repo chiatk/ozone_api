@@ -33,7 +33,7 @@ async def set_sync_height(chain_id, address: bytes, height: int):
 
 async def handle_coin(address: str, coin_record: CoinRecord, parent_coin_spend: CoinSpend):
     result =[]
-    coin = Coin.from_json_dict(coin_record['coin'])
+    coin = coin_record.coin
     logger.debug('handle coin: %s', coin.name().hex())
     did_info = get_did_info_from_coin_spend(coin, parent_coin_spend, address)
     if did_info is not None:
