@@ -31,14 +31,35 @@ parent_coin_spend = {
 }
 
 db_coin_record= {
-    "inner_puzzlehash":"0x51dbc54a328e3a7c446c2cf273bf2d51f3fcf5dc6d46b7a610fa841b326964b5",
-    "outer_puzzlehash":"0xfed7ffa4dd2403359791217379cb7058910d986a5d9156f75667838cab48f4a7",
+    "inner_puzzlehash":"0x51dbc54a328e3a7c446c2cf273bf2d51f3fcf5dc6d46b7a610fa841b326964b5", 
     "sender_inner_ph":"0x4442b1fa3b71edfdaaa7f0379ce10bbcdce224b5547e1fe1a7b65138b76cb1e2",
-    "outer_inner_ph":"0x4442b1fa3b71edfdaaa7f0379ce10bbcdce224b5547e1fe1a7b65138b76cb1e2",
     "type":"nft"|"xch"|"cat"|"unk",
+    "memos":["hola"],
     "mod_puzzle_hash":"",
     "coin_name":"0x9a0ce95a417c193d4abd6af11eacca974bb1817269f5bcbda5af0d5563da2921",
     "coin":coin_record,
-    "parent_coin_spend":"parent_coin_spend"
+    "parent_coin_spend":"parent_coin_spend",
+    "confirmed_block_index":256897,
+}
 
+
+{
+  "coins":{
+    "0x4442b1fa3b71edfdaaa7f0379ce10bbcdce224b5547e1fe1a7b65138b76cb1e2":{"spent_block_index":12547}
+  },
+  "addresses":{
+      "0x51dbc54a328e3a7c446c2cf273bf2d51f3fcf5dc6d46b7a610fa841b326964b5":[
+              {
+              "inner_puzzlehash":"0x51dbc54a328e3a7c446c2cf273bf2d51f3fcf5dc6d46b7a610fa841b326964b5", 
+              "sender_inner_ph":"0x4442b1fa3b71edfdaaa7f0379ce10bbcdce224b5547e1fe1a7b65138b76cb1e2",
+              "type":"nft"|"xch"|"cat"|"unk",
+              "memos":["hola"],
+              "mod_puzzle_hash":"",
+              "coin_name":"0x9a0ce95a417c193d4abd6af11eacca974bb1817269f5bcbda5af0d5563da2921",
+              "coin":coin_record,
+              "parent_coin_spend":"parent_coin_spend",
+               "confirmed_block_index":256897
+          }
+      ]
+  }
 }
