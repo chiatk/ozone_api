@@ -3,7 +3,9 @@ import datetime
 import json
 from lib2to3.pgen2.token import OP
 from optparse import Option
+import os
 from pickletools import uint4
+from anyio import Path
 from chia.types.blockchain_format.program import SerializedProgram, INFINITE_COST
 from typing import List, Optional, Dict
 from chia.wallet.puzzles.cat_loader import CAT_MOD
@@ -17,9 +19,7 @@ from chia.util.bech32m import encode_puzzle_hash, decode_puzzle_hash as inner_de
 from chia.types.spend_bundle import SpendBundle
 from chia.types.coin_spend import CoinSpend
 from chia.consensus.block_record import BlockRecord
-from ozoneapi.api import get_full_node_client
-from ozoneapi.cat_data import CatData 
-import ozoneapi.config as settings
+ 
 from chia.util.byte_types import hexstr_to_bytes
 from chia.types.coin_record import CoinRecord
 from chia.types.blockchain_format.sized_bytes import bytes32
@@ -31,6 +31,19 @@ from chia.consensus.constants import ConsensusConstants
 from chia.consensus.default_constants import DEFAULT_CONSTANTS
 from chia.consensus.cost_calculator import NPCResult
 from chia.full_node.mempool import Mempool
+from chia.util.default_root import DEFAULT_ROOT_PATH
+from chia.util.config import load_config
+
+CHIA_ROOT_PATH = Path(os.environ.get('CHIA_ROOT_PATH'))
+CHIA_CONFIG = load_config(DEFAULT_ROOT_PATH, "config.yaml")
+ 
+
+async def get_full_node_client() -> FullNodeRpcClient:
+    config = CHIA_CONFIG
+    full_node_client = await FullNodeRpcClient.create(config['self_hostname'], config['full_node']['rpc_port'],
+                                                      CHIA_ROOT_PATH, CHIA_CONFIG)
+    return full_node_client
+
  
  
 
@@ -126,7 +139,7 @@ if __name__ == '__main__':
 
 def get_spend_bundlecost(spend_bundle: SpendBundle ) -> uint4:
     program = simple_solution_generator(spend_bundle) 
-    config = config = settings.CHIA_CONFIG
+    config = config = CHIA_CONFIG
     overrides = config["network_overrides"]["constants"][config["selected_network"]]
     consensus_constants = DEFAULT_CONSTANTS.replace_str_to_bytes(**overrides)
     result: NPCResult = get_name_puzzle_conditions( program, consensus_constants.MAX_BLOCK_COST_CLVM,\
@@ -138,7 +151,7 @@ def min_fee_for_bundle(spend_bundle: SpendBundle  )-> float:
     Get the minimum fee for a bundle.
     """
     bundle_cost = get_spend_bundlecost(spend_bundle)
-    config = config = settings.CHIA_CONFIG
+    config = config = CHIA_CONFIG
     overrides = config["network_overrides"]["constants"][config["selected_network"]]
     consensus_constants = DEFAULT_CONSTANTS.replace_str_to_bytes(**overrides)
     mempool_max_total_cost = int(consensus_constants.MAX_BLOCK_COST_CLVM * consensus_constants.MEMPOOL_BLOCK_BUFFER)
