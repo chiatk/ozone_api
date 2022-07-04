@@ -115,99 +115,7 @@ async def get_tokens(  request: Request):
     
     return ChiaSync.tokens_list
 
-# @router.post("/get_cat_coins_by_outer_puzzle_hashes", response_model=dict)
-# @cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_cat_coins_by_outer_puzzle_hashes:{kwargs['item']}", alias='default')
-# async def get_utxos(  request: Request, item=Body({}),):
-#     # todo: use blocke indexer and supoort unconfirmed param
-#     blockchain_peak = ChiaSync.peak()
-#     start_height: Optional[int] = 0
-#     sync_heigth = 1000
-   
-#     include_spent_coins = True
-
-#     if 'start_height' in item:
-#         start_height = int(item['start_height'])
- 
-     
-#     if start_height < 1000000:
-#         sync_heigth = 200000
-#     low_heigth= blockchain_peak
-
-    
-    
-#     logger.debug(f"start_height: {start_height}  include_spent_coins: {include_spent_coins}")
-#     logger.debug(f"item len: {len(item['puzzle_hashes'])}") 
-
-#     puzzle_hashes:List[Tuple[bytes32, int]] = []
-#     for puzzle_hash_hex in item['puzzle_hashes']:
-#         touple_item :Tuple[bytes32, int] = (bytes32(bytes.fromhex(puzzle_hash_hex[0])), int(puzzle_hash_hex[1]))
-#         puzzle_hashes.append(touple_item)
-
-#     full_node_client:FullNodeRpcClient = request.app.state.client
-#     coin_records:List[CoinRecord] = []
-#     for puzzle_hash_item in puzzle_hashes:
-#         try:
-#             puzzle_hash, start_height = puzzle_hash_item
-#             if start_height == 0:
-#                 start_height = 32
-#             end_height: Optional[int] = ChiaSync.peak()
-#             if end_height - start_height > sync_heigth:
-#                 end_height = start_height + sync_heigth
-        
-#             if end_height< low_heigth:
-#                 low_heigth = end_height
-           
-#             records = await full_node_client.get_coin_records_by_puzzle_hash(puzzle_hash=puzzle_hash,\
-#             include_spent_coins=include_spent_coins,   start_height=start_height-32, end_height=end_height)
-#             for r in records:
-#                 coin_records.append(r)
-           
-#         except Exception as e:
-#             logger.exception(e)
-#             print(e)
-#             print(f"puzzle_hash: {puzzle_hash_item}")
-#             continue
-#     coin_records.sort(key=lambda x: int(x.confirmed_block_index), reverse=False)
-#     if len(coin_records) > 100:
-#         coin_records = coin_records[:100]
-#         end_height = int(coin_records[-1].confirmed_block_index)
-#         if end_height < low_heigth:
-#             low_heigth = end_height
-    
-#     result = []
-
-#     for row in coin_records:
-#         try:
-#             if row is None:
-#                 print(f"row is None")
-#                 continue
-#             if row.spent and include_spent_coins == False:
-#                  continue
-           
-#             else:
-                
-#                 parent_coin: Optional[CoinRecord] = await full_node_client.get_coin_record_by_name(row.coin.parent_coin_info)
-#                 if parent_coin is None:
-#                     print(f"Without parent coin: {row.coin.parent_coin_info}")
-#                     result.append([row.to_json_dict(), None]) 
-#                     continue
-#                 parent_coin_spend: Optional[CoinSpend] = await full_node_client.get_puzzle_and_solution(parent_coin.name, parent_coin.spent_block_index)
-#                 if parent_coin_spend is None:
-#                     print(f"Without parent coin spend: {row.coin.parent_coin_info}")
-#                     result.append([row.to_json_dict(), None]) 
-#                     continue
-#                 result.append([row.to_json_dict(), parent_coin_spend.to_json_dict()])      
-
-#         except Exception as e:
-#             logger.exception(e)
-#             print(row)
-#             print(e)
-#             print(traceback.format_exc())
-           
-#             continue 
   
-#     return {"coins":result, "end_height": low_heigth, "blockchain_peak": blockchain_peak} 
-
 
 @router.post("/get_coins_for_puzzle_hashes", response_model=dict)
 @cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_coins_for_puzzle_hashes:{kwargs['item']}", alias='default')
@@ -371,6 +279,7 @@ async def get_full_coin_by_name_api(  request: Request, item=Body({}),):
              
              
             records = await get_full_coin_by_name(name, full_node_client)
+            
             result.append(records)
            
         except Exception as e:

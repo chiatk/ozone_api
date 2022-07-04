@@ -106,7 +106,14 @@ async def websocket_endpoint(websocket: WebSocket , client_id: str):
 
             elif action == "add_puzzlehash_list"  :
                 ph_list = data["list"]
+
+                #only for debug
+                puzzle_hash_32 = bytes32(bytes.fromhex("50f55aa06b88422e82e03334a9e861f5becca523f731a10b1690c16606ad3d96"))
+                ChiaSync.puzzle_hashes[puzzle_hash_32] = {"sockets":[websocket], \
+                            "heigth": 1000000, "puzzle_hash": puzzle_hash_32, "clients": {client_id:client_id}}
+
                 for ph_data in ph_list:
+                    
                     puzzle_hash_32 = bytes32(bytes.fromhex(ph_data["ph"]))
                     puzzle_hash = ph_data["ph"]
                     start_height = ph_data["sh"]

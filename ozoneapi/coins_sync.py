@@ -67,10 +67,10 @@ async def get_full_coin_of_puzzle_hashes(puzzle_hashes_data: List, full_node_cli
                     logger.debug(f"Without parent coin spend: {row.coin.parent_coin_info} {client_id}")
                     await on_found([row.to_json_dict(), None], end_heigth, row.coin.puzzle_hash.hex(),  websocket)  
                     continue 
-                address = encode_puzzle_hash(row.coin.puzzle_hash, "xch")  
-                assets = await handle_coin(address,row, parent_coin_spend )
-                if assets is not None and len(assets)>0:
-                    print("tenemos assets")
+                # address = encode_puzzle_hash(row.coin.puzzle_hash, "xch")  
+                # assets = await handle_coin(address,row, parent_coin_spend )
+                # if assets is not None and len(assets)>0:
+                #     print("tenemos assets")
                 await  on_found([row.to_json_dict(), parent_coin_spend.to_json_dict()], end_heigth, row.coin.puzzle_hash.hex(),  websocket)  
         except Exception as e:
             logger.exception(e)
