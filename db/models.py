@@ -38,7 +38,7 @@ db_coin_record= {
     "mod_puzzle_hash":"",
     "coin_name":"0x9a0ce95a417c193d4abd6af11eacca974bb1817269f5bcbda5af0d5563da2921",
     "coin":coin_record,
-    "parent_coin_spend":"parent_coin_spend",
+    "parent_coin_spend":parent_coin_spend,
     "confirmed_block_index":256897,
 }
 
