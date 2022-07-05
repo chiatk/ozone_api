@@ -34,6 +34,8 @@ from chia.full_node.mempool import Mempool
 from chia.util.default_root import DEFAULT_ROOT_PATH
 from chia.util.config import load_config
 
+from chia.util.bech32m import encode_puzzle_hash, decode_puzzle_hash 
+
 CHIA_ROOT_PATH = Path(os.environ.get('CHIA_ROOT_PATH'))
 CHIA_CONFIG = load_config(DEFAULT_ROOT_PATH, "config.yaml")
  
@@ -44,8 +46,7 @@ async def get_full_node_client() -> FullNodeRpcClient:
                                                       CHIA_ROOT_PATH, CHIA_CONFIG)
     return full_node_client
 
- 
- 
+  
 
 async def get_sender_puzzle_hash_of_cat_coin(coin_record: CoinRecord, node_client: FullNodeRpcClient) -> Optional[bytes32]:
     """
@@ -81,15 +82,18 @@ async def get_inner_puzzle_hash_of_coin(coin_record: CoinRecord, node_client: Fu
     """ 
     parent_coin: Optional[CoinRecord] = await node_client.get_coin_record_by_name(coin_record.coin.parent_coin_info)
     parent_coin_spend: Optional[CoinSpend] = await node_client.get_puzzle_and_solution(parent_coin.name, parent_coin.spent_block_index)
+    value= parent_coin_spend.to_json_dict()
     puzzle_reveal: SerializedProgram = parent_coin_spend.puzzle_reveal
     solution_program =parent_coin_spend.solution.to_program()
-    solution = list(solution_program.as_iter())
+    solution = list(solution_program.as_iter())     
+    block = await node_client.get_block_record_by_height(parent_coin.spent_block_index)
+
 
     mod, curried_args = puzzle_reveal.uncurry()
     if mod == CAT_MOD:
-        arguments = list(curried_args.as_iter())
-        puzzle= arguments[2]
-        puzzle_hash = puzzle.get_tree_hash()
+        arguments = list(solution_program.as_iter())
+        puzzle_hash= list(arguments[0].rest().first().as_iter())[2].rest().first().as_python()
+ 
         return puzzle_hash
       
     else:
@@ -101,16 +105,18 @@ async def main():
     node_client = await get_full_node_client()
     coin_name = bytes32(bytes.fromhex('45b797e4f70164d670a7379624186ca9249e2f9459fd8ad431789836d427d754'))
     coin = await node_client.get_coin_record_by_name(coin_name)
+    print(coin.coin.puzzle_hash.hex())
     sender_puzzle_hash =  await get_sender_puzzle_hash_of_cat_coin(coin, node_client)
     
 
     sender_address = encode_puzzle_hash(sender_puzzle_hash, "xch")
     print(f"Sender address: {sender_address}")
 
-    # inner_puzzle_hash =  await get_inner_puzzle_hash_of_coin(coin, node_client)
+    inner_puzzle_hash =  await get_inner_puzzle_hash_of_coin(coin, node_client)
+    print(bytes32(inner_puzzle_hash).hex())
 
-    # sender_address = encode_puzzle_hash(inner_puzzle_hash, "xch")
-    # print(f"Inner address: {sender_address}")
+    sender_address = encode_puzzle_hash(inner_puzzle_hash, "xch")
+    print(f"Inner address: {sender_address}")
 
     node_client.close()
     await node_client.await_closed()
