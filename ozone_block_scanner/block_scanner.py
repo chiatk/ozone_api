@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from enum import Enum
 
 from ozone_block_scanner.did import get_did_info_from_coin_spend
+from ozone_block_scanner.nft import get_nft_info_from_coin_spend
 
 MIN_CAT_BLOCK_HEIGHT = 1000000
 MIN_NFT_BLOCK_HEIGHT = 1000000
@@ -37,6 +38,7 @@ class ScannedBlock(BaseModel):
     mod_hash: bytes32
     coin_name: bytes32
     extra: Optional[list]
+    did_id: Optional[bytes32]
 
 
 async def get_sender_puzzle_hash_of_cat_coin(parent_coin_spend: CoinSpend) -> \
@@ -63,7 +65,8 @@ async def scan_addition_coin(coin_record: CoinRecord, node_client: FullNodeRpcCl
     sender_inner_puzzle_hash: Optional[bytes32] = None
     outer_puzzle_hash: Optional[bytes32] = None
     mod_hash: Optional[bytes32] = None
-    extra = []
+    did_id: Optional[bytes32] = None
+    extra = [] # can be NftInfo is NFT
 
     spend_type: CoinSpendType = CoinSpendType.standard
     coin_name: Optional[bytes32] = coin_record.coin.name()
@@ -102,7 +105,15 @@ async def scan_addition_coin(coin_record: CoinRecord, node_client: FullNodeRpcCl
             spend_type = CoinSpendType.did
 
     if coin_record.confirmed_block_index >= MIN_NFT_BLOCK_HEIGHT and not founded:
-        pass
+        nft_result = get_nft_info_from_coin_spend(coin_spend, coin_record, node_client)
+        if nft_result is not None:
+            founded = True
+            nft_info, new_did_id, new_p2_puzzle_hash, lineage_proof = nft_result
+            inner_puzzle_hash = new_p2_puzzle_hash
+            outer_puzzle_hash = coin_record.coin.puzzle_hash
+            did_id = new_did_id
+            extra.append(nft_info)
+            spend_type = CoinSpendType.nft
 
     if not founded:
         inner_puzzle_hash = coin_record.coin.puzzle_hash
@@ -113,10 +124,12 @@ async def scan_addition_coin(coin_record: CoinRecord, node_client: FullNodeRpcCl
         "coin_spend": coin_spend,
         "inner_puzzle_hash": inner_puzzle_hash,
         "outer_puzzle_hash": outer_puzzle_hash,
-        "type": type,
+        "sender_inner_puzzle_hash": sender_inner_puzzle_hash,
+        "type": spend_type,
         "mod_hash": mod_hash,
         "coin_name": coin_record.coin.name(),
-        "extra": extra
+        "extra": extra,
+        "did_id": did_id
     })
 
 

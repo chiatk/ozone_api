@@ -1,10 +1,16 @@
-from typing import Tuple, Optional, Dict, Any
+from typing import Tuple, Optional, Dict, Any, List
 
+from chia.rpc.full_node_rpc_client import FullNodeRpcClient
 from chia.types.blockchain_format.coin import Coin
 from chia.types.blockchain_format.program import Program
 from chia.types.blockchain_format.sized_bytes import bytes32
+from chia.types.coin_record import CoinRecord
 from chia.types.coin_spend import CoinSpend
+from chia.util.ints import uint64
+from chia.wallet.lineage_proof import LineageProof
+from chia.wallet.nft_wallet.nft_info import NFTInfo
 from chia.wallet.nft_wallet.uncurry_nft import UncurriedNFT
+from clvm_tools.binutils import disassemble
 
 
 def metadata_to_program(metadata: Dict[bytes, Any]) -> Program:
@@ -96,14 +102,14 @@ def get_new_owner_did(unft: UncurriedNFT, solution: Program) -> Optional[bytes32
     return new_did_id
 
 
-def get_nft_info_from_coin_spend(nft_coin: Coin, parent_cs: CoinSpend, address: bytes):
-    puzzle = parent_cs.puzzle_reveal
+def get_nft_info_from_coin_spend(parent_coin_spend: CoinSpend, coin_record: CoinRecord, node_client: FullNodeRpcClient):
+    puzzle = Program.from_bytes(bytes(parent_coin_spend.puzzle_reveal))
     try:
         uncurried_nft = UncurriedNFT.uncurry(puzzle)
     except Exception as e:
 
         return None
-    solution = Program.fromhex(parent_cs['solution'])
+    solution = Program.fromhex(parent_coin_spend['solution'])
 
     # DID ID determines which NFT wallet should process the NFT
     new_did_id = None
@@ -122,9 +128,45 @@ def get_nft_info_from_coin_spend(nft_coin: Coin, parent_cs: CoinSpend, address: 
         if new_did_id == b"":
             new_did_id = None
 
-    if new_p2_puzhash != address:
-        return
-    parent_coin = Coin.from_json_dict(parent_cs['coin'])
+    parent_coin = Coin.from_json_dict(parent_coin_spend['coin'])
     lineage_proof = LineageProof(parent_coin.parent_coin_info, uncurried_nft.nft_state_layer.get_tree_hash(),
                                  parent_coin.amount)
-    return (uncurried_nft, new_did_id, new_p2_puzhash, lineage_proof)
+
+    data_uris: List[str] = []
+
+    for uri in uncurried_nft.data_uris.as_python():
+        data_uris.append(str(uri, "utf-8"))
+    meta_uris: List[str] = []
+    for uri in uncurried_nft.meta_uris.as_python():
+        meta_uris.append(str(uri, "utf-8"))
+    license_uris: List[str] = []
+    for uri in uncurried_nft.license_uris.as_python():
+        license_uris.append(str(uri, "utf-8"))
+
+    mint_coin: Optional[CoinRecord] = await node_client.get_coin_record_by_name(uncurried_nft.singleton_launcher_id)
+    mint_height = 0
+    if mint_coin is not None:
+        mint_height = mint_coin.spent_block_index
+
+    nft_info = NFTInfo(
+        uncurried_nft.singleton_launcher_id,
+        coin_record.coin.name(),
+        uncurried_nft.owner_did,
+        uncurried_nft.trade_price_percentage,
+        uncurried_nft.royalty_address,
+        data_uris,
+        uncurried_nft.data_hash.as_python(),
+        meta_uris,
+        uncurried_nft.meta_hash.as_python(),
+        license_uris,
+        uncurried_nft.license_hash.as_python(),
+        uint64(uncurried_nft.series_total.as_int()),
+        uint64(uncurried_nft.series_number.as_int()),
+        uncurried_nft.metadata_updater_hash.as_python(),
+        disassemble(uncurried_nft.metadata),
+        mint_height,
+        uncurried_nft.supports_did,
+        False,
+    )
+
+    return nft_info, new_did_id, new_p2_puzhash, lineage_proof
