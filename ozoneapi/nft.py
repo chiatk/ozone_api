@@ -12,12 +12,9 @@ from .types import Coin, Program, LineageProof
 from chia.types.coin_record import CoinRecord
 from chia.types.coin_spend import CoinSpend
 
-
 logger = logging.getLogger(__name__)
 
-
 _T_UncurriedNFT = TypeVar("_T_UncurriedNFT", bound="UncurriedNFT")
-
 
 NFT_MOD = NFT_STATE_LAYER_MOD
 bytes32 = bytes
@@ -222,8 +219,6 @@ class NFTInfo:
         return dataclasses.asdict(self)
 
 
-
-
 def metadata_to_program(metadata: Dict[bytes, Any]) -> Program:
     """
     Convert the metadata dict to a Chialisp program
@@ -263,7 +258,6 @@ def prepend_value(key: bytes, value: Program, metadata: Dict[bytes, Any]) -> Non
             metadata[key] = [value.as_python()]
         else:
             metadata[key].insert(0, value.as_python())
-
 
 
 def update_metadata(metadata: Program, update_condition: Program) -> Program:
@@ -312,7 +306,7 @@ def get_new_owner_did(unft: UncurriedNFT, solution: Program) -> Optional[bytes32
             # this is the change owner magic condition
             new_did_id = condition.at("rf").atom
     return new_did_id
- 
+
 
 def get_nft_info_from_coin_spend(nft_coin: Coin, parent_cs: CoinSpend, address: bytes):
     puzzle = parent_cs.puzzle_reveal
@@ -322,7 +316,7 @@ def get_nft_info_from_coin_spend(nft_coin: Coin, parent_cs: CoinSpend, address: 
         logger.debug('uncurry nft puzzle: %r', e)
         return
     solution = Program.fromhex(parent_cs['solution'])
-    
+
     # DID ID determines which NFT wallet should process the NFT
     new_did_id = None
     old_did_id = None
@@ -343,5 +337,6 @@ def get_nft_info_from_coin_spend(nft_coin: Coin, parent_cs: CoinSpend, address: 
     if new_p2_puzhash != address:
         return
     parent_coin = Coin.from_json_dict(parent_cs['coin'])
-    lineage_proof = LineageProof(parent_coin.parent_coin_info, uncurried_nft.nft_state_layer.get_tree_hash(), parent_coin.amount)
+    lineage_proof = LineageProof(parent_coin.parent_coin_info, uncurried_nft.nft_state_layer.get_tree_hash(),
+                                 parent_coin.amount)
     return (uncurried_nft, new_did_id, new_p2_puzhash, lineage_proof)
