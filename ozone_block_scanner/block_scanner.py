@@ -147,16 +147,15 @@ async def puzzle_hash_tracing(node_client: FullNodeRpcClient, start: int = 1, en
     removals: List[CoinRecord] = []
 
     for block_record in records:
-        if block_record.get('reward_claims_incorporated') is not None:
 
-            header_hash = bytes32.from_hexstr(block_record.get('header_hash'))
+        header_hash = bytes32.from_hexstr(block_record.get('header_hash'))
 
-            additions, removals = await node_client.get_additions_and_removals(header_hash)
+        additions, removals = await node_client.get_additions_and_removals(header_hash)
 
-            for cr in additions:
-                coin_record: CoinRecord = cr
-                coin_ph = coin_record.coin.puzzle_hash
+        for cr in additions:
+            coin_record: CoinRecord = cr
+            analyzer_result = await scan_addition_coin(coin_record, node_client)
 
-            removals.extend(removals)
+        removals.extend(removals)
 
     return processed_additions, removals
