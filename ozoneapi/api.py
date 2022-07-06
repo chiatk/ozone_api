@@ -13,24 +13,21 @@ from chia.rpc.full_node_rpc_client import FullNodeRpcClient
 from chia.util.bech32m import encode_puzzle_hash, decode_puzzle_hash as inner_decode_puzzle_hash
 from chia.types.spend_bundle import SpendBundle
 from chia.types.coin_spend import CoinSpend
-  
-  
+
 from chia.util.byte_types import hexstr_to_bytes
 from chia.types.coin_record import CoinRecord
 from chia.types.blockchain_format.sized_bytes import bytes32
-from ozoneapi.cat_data import CatData 
+from ozoneapi.cat_data import CatData
 from ozoneapi.chia_sync import ChiaSync
-from ozoneapi import config as settings, web_socket 
+from ozoneapi import config as settings, web_socket
 from ozoneapi.coins_sync import get_full_coin_by_name
- 
+
 import traceback
 from dateutil.relativedelta import relativedelta
 
 caches.set_config(settings.CACHE_CONFIG)
- 
-app = FastAPI()
 
- 
+app = FastAPI()
 
 cwd = os.path.dirname(__file__)
 
@@ -53,9 +50,10 @@ async def get_full_node_client() -> FullNodeRpcClient:
 @app.on_event("startup")
 async def startup():
     app.state.client = await get_full_node_client()
-   
+
     await app.state.client.get_blockchain_state()
-    app.state.redis = aioredis.from_url(os.environ.get("REDIS_URL", LOCAL_REDIS_URL), encoding="utf8", decode_responses=True)
+    app.state.redis = aioredis.from_url(os.environ.get("REDIS_URL", LOCAL_REDIS_URL), encoding="utf8",
+                                        decode_responses=True)
     ChiaSync.start(app.state)
 
 
@@ -83,6 +81,7 @@ def coin_to_json(coin):
         'amount': str(coin.amount)
     }
 
+
 router = APIRouter()
 
 
@@ -98,83 +97,79 @@ async def get_utxos(address: str, request: Request):
     # todo: use blocke indexer and supoort unconfirmed param
     pzh = decode_puzzle_hash(address)
     full_node_client = request.app.state.client
-    coin_records:List[CoinRecord] = await full_node_client.get_coin_records_by_puzzle_hash(puzzle_hash=pzh, include_spent_coins=False)
+    coin_records: List[CoinRecord] = await full_node_client.get_coin_records_by_puzzle_hash(puzzle_hash=pzh,
+                                                                                            include_spent_coins=False)
     data = []
 
     for row in coin_records:
         if row.spent:
             continue
         data.append(coin_to_json(row.coin))
-   
+
     return data
 
 
 @router.get("/tokens", response_model=List[CatData])
 @cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_tokens: ", alias='default')
-async def get_tokens(  request: Request):
-    
+async def get_tokens(request: Request):
     return ChiaSync.tokens_list
 
-  
 
 @router.post("/get_coins_for_puzzle_hashes", response_model=dict)
 @cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_coins_for_puzzle_hashes:{kwargs['item']}", alias='default')
-async def get_utxos(  request: Request, item=Body({}),):
+async def get_utxos(request: Request, item=Body({}), ):
     # todo: use blocke indexer and supoort unconfirmed param
     blockchain_peak = ChiaSync.peak()
     start_height: Optional[int] = 0
-   
-    wallet_results = []
- 
-    logger.debug(f"item len: {len(item['puzzle_hashes'])}") 
 
-    puzzle_hashes:List[Tuple[bytes32, int]] = []
+    wallet_results = []
+
+    logger.debug(f"item len: {len(item['puzzle_hashes'])}")
+
+    puzzle_hashes: List[Tuple[bytes32, int]] = []
     for puzzle_hash_hex in item['puzzle_hashes']:
-        touple_item :Tuple[bytes32, int] = (bytes32(bytes.fromhex(puzzle_hash_hex[0])), int(puzzle_hash_hex[1]))
+        touple_item: Tuple[bytes32, int] = (bytes32(bytes.fromhex(puzzle_hash_hex[0])), int(puzzle_hash_hex[1]))
         puzzle_hashes.append(touple_item)
 
-    full_node_client:FullNodeRpcClient = request.app.state.client
-    coin_records:List[CoinRecord] = []
+    full_node_client: FullNodeRpcClient = request.app.state.client
+    coin_records: List[CoinRecord] = []
     for puzzle_hash_item in puzzle_hashes:
         try:
             puzzle_hash, start_height = puzzle_hash_item
             sync_heigth = 500000
-   
+
             include_spent_coins = True
 
             if 'start_height' in item:
                 start_height = int(item['start_height'])
-        
-            
+
             if start_height < 1000000:
                 sync_heigth = 1000000
-            
-            if puzzle_hash in ChiaSync.slow_phs: 
+
+            if puzzle_hash in ChiaSync.slow_phs:
                 sync_heigth = 10000
 
             logger.debug(f"sync_heigth: {sync_heigth}")
 
-
             end_height: Optional[int] = ChiaSync.peak()
             if end_height - start_height > sync_heigth:
                 end_height = start_height + sync_heigth
-            
-            if(end_height > ChiaSync.peak()):
+
+            if (end_height > ChiaSync.peak()):
                 end_height = ChiaSync.peak()
 
-      
-           
-            records = await full_node_client.get_coin_records_by_puzzle_hash(puzzle_hash=puzzle_hash,\
-            include_spent_coins=include_spent_coins,   start_height=start_height, end_height=end_height)
-            if len(records) >100:
-                if puzzle_hash is not  ChiaSync.slow_phs: 
+            records = await full_node_client.get_coin_records_by_puzzle_hash(puzzle_hash=puzzle_hash, \
+                                                                             include_spent_coins=include_spent_coins,
+                                                                             start_height=start_height,
+                                                                             end_height=end_height)
+            if len(records) > 100:
+                if puzzle_hash is not ChiaSync.slow_phs:
                     print(f"puzzle_hash: {puzzle_hash_item} to slow")
                     ChiaSync.slow_phs.add(puzzle_hash)
-             
-            
+
             all_addded = True
             for r in records:
-                if( len(coin_records)>100):
+                if (len(coin_records) > 100):
                     all_addded = False
                     wallet_results.append({"puzzle_hash": puzzle_hash.hex(), "end_height": r.confirmed_block_index})
                     break
@@ -182,7 +177,7 @@ async def get_utxos(  request: Request, item=Body({}),):
 
             if all_addded:
                 wallet_results.append({"puzzle_hash": puzzle_hash.hex(), "end_height": end_height})
-           
+
         except Exception as e:
             logger.exception(e)
             print(e)
@@ -190,8 +185,6 @@ async def get_utxos(  request: Request, item=Body({}),):
             continue
 
     coin_records.sort(key=lambda x: int(x.confirmed_block_index), reverse=False)
-  
-
 
     result = []
 
@@ -201,126 +194,122 @@ async def get_utxos(  request: Request, item=Body({}),):
                 print(f"row is None")
                 continue
             if row.spent and include_spent_coins == False:
-                 continue
-           
+                continue
+
             else:
-                
-                parent_coin: Optional[CoinRecord] = await full_node_client.get_coin_record_by_name(row.coin.parent_coin_info)
+
+                parent_coin: Optional[CoinRecord] = await full_node_client.get_coin_record_by_name(
+                    row.coin.parent_coin_info)
                 if parent_coin is None:
                     print(f"Without parent coin: {row.coin.parent_coin_info}")
-                    result.append([row.to_json_dict(), None]) 
+                    result.append([row.to_json_dict(), None])
                     continue
-                parent_coin_spend: Optional[CoinSpend] = await full_node_client.get_puzzle_and_solution(parent_coin.name, parent_coin.spent_block_index)
+                parent_coin_spend: Optional[CoinSpend] = await full_node_client.get_puzzle_and_solution(
+                    parent_coin.name, parent_coin.spent_block_index)
                 if parent_coin_spend is None:
                     print(f"Without parent coin spend: {row.coin.parent_coin_info}")
-                    result.append([row.to_json_dict(), None]) 
+                    result.append([row.to_json_dict(), None])
                     continue
-                result.append([row.to_json_dict(), parent_coin_spend.to_json_dict()])      
+                result.append([row.to_json_dict(), parent_coin_spend.to_json_dict()])
 
         except Exception as e:
             logger.exception(e)
             print(row)
             print(e)
             print(traceback.format_exc())
-           
-            continue 
-  
-    return {"coins":result, "wallet_results": wallet_results, "blockchain_peak": blockchain_peak} 
 
+            continue
+
+    return {"coins": result, "wallet_results": wallet_results, "blockchain_peak": blockchain_peak}
 
 
 @router.post("/get_coin_state", response_model=dict)
-#@cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_cat_coins_by_outer_puzzle_hashes:{kwargs['item']}", alias='default')
-async def get_utxos(  request: Request, item=Body({}),):
+# @cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_cat_coins_by_outer_puzzle_hashes:{kwargs['item']}", alias='default')
+async def get_utxos(request: Request, item=Body({}), ):
     # todo: use blocke indexer and supoort unconfirmed param
-  
-    names:List[bytes32] = []
+
+    names: List[bytes32] = []
     for puzzle_hash_hex in item['coins']:
-        coin_name  = bytes32(bytes.fromhex(puzzle_hash_hex))
+        coin_name = bytes32(bytes.fromhex(puzzle_hash_hex))
         names.append(coin_name)
 
     full_node_client = request.app.state.client
     result = []
     for name in names:
         try:
-             
-             
-            records = await full_node_client.get_coin_record_by_name(coin_id=name )
+
+            records = await full_node_client.get_coin_record_by_name(coin_id=name)
             if records is None:
                 logger.debug(f"not Found coin: {name}")
-                
+
                 continue
             result.append(records.to_json_dict())
-           
+
         except Exception as e:
             logger.exception(e)
             print(traceback.format_exc())
             print(e)
             print(f"puzzle_hash: {name}")
             continue
-     
-    return {"coins":result } 
+
+    return {"coins": result}
 
 
 @router.post("/get_full_coin_by_names", response_model=dict)
-#@cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_cat_coins_by_outer_puzzle_hashes:{kwargs['item']}", alias='default')
-async def get_full_coin_by_name_api(  request: Request, item=Body({}),):
+# @cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_cat_coins_by_outer_puzzle_hashes:{kwargs['item']}", alias='default')
+async def get_full_coin_by_name_api(request: Request, item=Body({}), ):
     # todo: use blocke indexer and supoort unconfirmed param
-  
-    names:List[bytes32] = []
+
+    names: List[bytes32] = []
     for puzzle_hash_hex in item['coins']:
-        coin_name  = bytes32(bytes.fromhex(puzzle_hash_hex))
+        coin_name = bytes32(bytes.fromhex(puzzle_hash_hex))
         names.append(coin_name)
 
     full_node_client = request.app.state.client
     result = []
     for name in names:
         try:
-             
-             
+
             records = await get_full_coin_by_name(name, full_node_client)
-            
+
             result.append(records)
-           
+
         except Exception as e:
             logger.exception(e)
             print(traceback.format_exc())
             print(e)
             print(f"puzzle_hash: {name}")
             continue
-     
-    return {"coins":result } 
+
+    return {"coins": result}
 
 
 @router.post("/get_full_nft_coin_by_names", response_model=dict)
-#@cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_cat_coins_by_outer_puzzle_hashes:{kwargs['item']}", alias='default')
-async def get_full_coin_by_name_api(  request: Request, item=Body({}),):
+# @cached(ttl=10, key_builder=lambda *args, **kwargs: f"get_cat_coins_by_outer_puzzle_hashes:{kwargs['item']}", alias='default')
+async def get_full_coin_by_name_api(request: Request, item=Body({}), ):
     # todo: use blocke indexer and supoort unconfirmed param
-  
-    names:List[bytes32] = []
+
+    names: List[bytes32] = []
     for nft_name in item['names']:
-        coin_name  =  decode_puzzle_hash(nft_name)
+        coin_name = decode_puzzle_hash(nft_name)
         names.append(coin_name)
 
     full_node_client = request.app.state.client
     result = []
     for name in names:
         try:
-             
-             
+
             records = await get_full_coin_by_name(name, full_node_client)
             result.append(records)
-           
+
         except Exception as e:
             logger.exception(e)
             print(traceback.format_exc())
             print(e)
             print(f"puzzle_hash: {name}")
             continue
-     
-    return {"coins":result } 
 
-
+    return {"coins": result}
 
 
 @router.post("/sendtx")
@@ -380,9 +369,9 @@ async def query_balance(puzzle_hash, request: Request):
 
 @router.get('/active_versions')
 @cached(ttl=10, key_builder=lambda *args, **kwargs: f"active_versions:", alias='default')
-async def query_balance( request: Request):
-    return {"android":{"min":40, "actual":40}, "ios":{"min":40, "actual":41}}
-    
+async def query_balance(request: Request):
+    return {"android": {"min": 40, "actual": 40}, "ios": {"min": 40, "actual": 41}}
+
 
 @router.post('/get_coins_by_names')
 @cached(ttl=10, key_builder=lambda *args, **kwargs: f"balance: ", alias='default')
@@ -392,16 +381,16 @@ async def get_coins(request: Request, item=Body({})):
     names: List[bytes32] = []
     for name_hex in item['names']:
         names.append(bytes32(bytes.fromhex(name_hex)))
-    coin_records:List[CoinRecord] = await full_node_client. \
+    coin_records: List[CoinRecord] = await full_node_client. \
         get_coin_records_by_names(names=names)
     result = []
     for row in coin_records:
-            result.append(row.to_json_dict())
+        result.append(row.to_json_dict())
 
     data = {
         'coin_records': result
     }
- 
+
     return data
 
 
@@ -471,6 +460,7 @@ DEFAULT_TOKEN_LIST = [
 async def list_tokens():
     return DEFAULT_TOKEN_LIST
 
+
 @router.get('/staking/list')
 async def list_tokens():
     with open('staking_list.json') as json_file:
@@ -480,17 +470,16 @@ async def list_tokens():
             cat_puzzle = bytes32(bytes.fromhex(row["cat_ph"]))
             row["puzzle_hash"] = puzzle_hash.hex()
             del row["cat_ph"]
-            
 
         return data
-     
+
+
 @router.get('/staking/{month}/{status}')
-async def list_tokens(month: int, status:str, request: Request):
+async def list_tokens(month: int, status: str, request: Request):
     include_spent_coins = True
 
     return await ChiaSync.get_staking_data(month, status)
-        
-        
+
 
 app.include_router(router, prefix="/v1.1")
 app.include_router(web_socket.router, tags=["WebSocket"])

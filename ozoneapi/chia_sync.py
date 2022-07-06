@@ -1,31 +1,23 @@
 from ast import Set
 import asyncio
 import datetime
-from lib2to3.pgen2.token import OP
-from optparse import Option
 import os
 import json
 import time
-from dateutil.relativedelta import relativedelta
 from typing import List, Optional, Dict
 import requests
 from logzero import logger
-from fastapi import FastAPI, APIRouter, Request, Body, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from aiocache import caches, cached
-from pydantic import BaseModel
 from chia.rpc.full_node_rpc_client import FullNodeRpcClient
-from chia.util.bech32m import encode_puzzle_hash, decode_puzzle_hash as inner_decode_puzzle_hash
-from chia.types.spend_bundle import SpendBundle
+from chia.util.bech32m import encode_puzzle_hash
 from chia.types.coin_spend import CoinSpend
-from chia.consensus.block_record import BlockRecord
+
+from ozone_block_scanner.block_scanner import scan_blocks_range
 from ozoneapi.cat_data import CatData
 
 import ozoneapi.config as settings
-from chia.util.byte_types import hexstr_to_bytes
 from chia.types.coin_record import CoinRecord
 from chia.types.blockchain_format.sized_bytes import bytes32
-from starlette.websockets import WebSocket, WebSocketDisconnect
 
 WAIT_TIME = 20
 
@@ -65,7 +57,7 @@ async def get_staking_coins(full_node_client: FullNodeRpcClient, month: int) -> 
         for item in records:
             coin_record: CoinRecord = item
             if transaction_processed(coin_record.name.hex()):
-                # print(f"Coin alredy sent {coin_record.name.hex()}")
+                # print(f"Coin already sent {coin_record.name.hex()}")
                 continue
 
             puzzle_hash: Optional[bytes32] = await get_sender_puzzle_hash_of_cat_coin(coin_record, full_node_client)
@@ -87,8 +79,8 @@ async def get_staking_coins(full_node_client: FullNodeRpcClient, month: int) -> 
             elif month == 12:
                 dias = 365
 
-            monts_delta = datetime.timedelta(days=dias)
-            payment_date_time = create_date_time + monts_delta
+            months_delta = datetime.timedelta(days=dias)
+            payment_date_time = create_date_time + months_delta
             payment_date_time = payment_date_time.replace(hour=0, minute=0, second=0, microsecond=0)
 
             posible_payment = (dias * diaria) + amount
@@ -142,7 +134,7 @@ class ChiaSync:
 
     @staticmethod
     async def load_state_loop():
-        while (True):
+        while True:
             ChiaSync.last_processed = time.time()
             try:
                 last_peak = ChiaSync.peak()
@@ -155,6 +147,16 @@ class ChiaSync:
                     asyncio.create_task(ChiaSync.check_staking_coins())
                     if ChiaSync.peak_broadcast_callback is not None:
                         asyncio.create_task(ChiaSync.peak_broadcast_callback(ChiaSync.peak()))
+
+                    result = await scan_blocks_range(ChiaSync.node_rpc_client, last_peak, ChiaSync.peak())
+                    result_cont = {}
+                    for coin_result in result[0]:
+                        if coin_result.spend_type not in result_cont:
+                            result_cont[coin_result.spend_type] = 0
+                        
+                        result_cont[coin_result.spend_type] += 1
+                        
+                    print(result_cont)
 
             except Exception as e:
                 print(f"exception: {e}")

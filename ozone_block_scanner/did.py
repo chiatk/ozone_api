@@ -66,7 +66,7 @@ def get_did_info_from_coin_spend(coin: Coin, parent_cs: CoinSpend) -> Optional[d
     except Exception:
         return None
 
-    solution = Program.fromhex(parent_cs['solution'])
+    solution = Program.fromhex(parent_cs.solution)
 
     p2_puzzle, recovery_list_hash, num_verification, singleton_struct, metadata = curried_args
     recovery_list_hash = recovery_list_hash.as_atom()

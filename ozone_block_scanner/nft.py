@@ -102,14 +102,14 @@ def get_new_owner_did(unft: UncurriedNFT, solution: Program) -> Optional[bytes32
     return new_did_id
 
 
-def get_nft_info_from_coin_spend(parent_coin_spend: CoinSpend, coin_record: CoinRecord, node_client: FullNodeRpcClient):
+async def get_nft_info_from_coin_spend(parent_coin_spend: CoinSpend, coin_record: CoinRecord, node_client: FullNodeRpcClient):
     puzzle = Program.from_bytes(bytes(parent_coin_spend.puzzle_reveal))
     try:
         uncurried_nft = UncurriedNFT.uncurry(puzzle)
     except Exception as e:
 
         return None
-    solution = Program.fromhex(parent_coin_spend['solution'])
+    solution = parent_coin_spend.solution.to_program()
 
     # DID ID determines which NFT wallet should process the NFT
     new_did_id = None
@@ -128,7 +128,7 @@ def get_nft_info_from_coin_spend(parent_coin_spend: CoinSpend, coin_record: Coin
         if new_did_id == b"":
             new_did_id = None
 
-    parent_coin = Coin.from_json_dict(parent_coin_spend['coin'])
+    parent_coin = parent_coin_spend.coin
     lineage_proof = LineageProof(parent_coin.parent_coin_info, uncurried_nft.nft_state_layer.get_tree_hash(),
                                  parent_coin.amount)
 
