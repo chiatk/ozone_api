@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from chia.consensus.block_record import BlockRecord
 from chia.rpc.full_node_rpc_client import FullNodeRpcClient
@@ -7,6 +7,7 @@ from chia.types.blockchain_format.sized_bytes import bytes32
 from chia.types.coin_record import CoinRecord
 from chia.types.coin_spend import CoinSpend
 from chia.util.hash import std_hash
+from chia.util.streamable import Streamable
 from chia.wallet.did_wallet.did_wallet_puzzles import DID_INNERPUZ_MOD
 from chia.wallet.puzzles.cat_loader import CAT_MOD
 from pydantic import BaseModel
@@ -41,6 +42,46 @@ class ScannedBlock(BaseModel):
     did_id: Optional[bytes32]
 
 
+def scanned_block_to_dict(block_data: ScannedBlock):
+    extras = None
+    if len(block_data.extra) > 0:
+        extras = []
+
+    for item in block_data.extra:
+        if issubclass(type(item), Streamable):
+            extras.append(item.to_json_dict())
+        elif isinstance(item, dict) or isinstance(item, Dict):
+            extras.append(item)
+
+    did_id = None
+    outer_puzzle_hash = None
+    sender_inner_puzzle_hash = None
+
+    if block_data.did_id is not None:
+        did_id = block_data.did_id
+
+    if block_data.outer_puzzle_hash is not None:
+        outer_puzzle_hash = block_data.outer_puzzle_hash
+
+    if block_data.sender_inner_puzzle_hash is not None:
+        sender_inner_puzzle_hash = block_data.sender_inner_puzzle_hash
+
+    result_dict = {
+        "coin_record": block_data.coin_record.to_json_dict(),
+        "coin_spend": block_data.coin_spend.to_json_dict(),
+        "inner_puzzle_hash": block_data.inner_puzzle_hash.hex(),
+        "outer_puzzle_hash": outer_puzzle_hash,
+        "sender_inner_puzzle_hash": sender_inner_puzzle_hash,
+        "type": block_data.type.value,
+        "mod_hash": block_data.mod_hash.hex(),
+        "coin_name": block_data.coin_name.hex(),
+        "extra": extras,
+        "did_id": did_id
+
+    }
+    return result_dict
+
+
 async def get_sender_puzzle_hash_of_cat_coin(parent_coin_spend: CoinSpend) -> \
         Optional[tuple[bytes32, bytes32, bytes32]]:
     puzzle_reveal: SerializedProgram = parent_coin_spend.puzzle_reveal
@@ -59,14 +100,13 @@ async def get_sender_puzzle_hash_of_cat_coin(parent_coin_spend: CoinSpend) -> \
 
 
 async def scan_addition_coin(coin_record: CoinRecord, node_client: FullNodeRpcClient, ):
-    # coin_record: Optional[CoinRecord] = None
     coin_spend: Optional[CoinSpend] = None
     inner_puzzle_hash: Optional[bytes32] = None
     sender_inner_puzzle_hash: Optional[bytes32] = None
     outer_puzzle_hash: Optional[bytes32] = None
     mod_hash: Optional[bytes32] = None
     did_id: Optional[bytes32] = None
-    extra = []# can be NftInfo is NFT
+    extra = []  # can be NftInfo is NFT
 
     spend_type: CoinSpendType = CoinSpendType.standard
     coin_name: Optional[bytes32] = coin_record.coin.name()
