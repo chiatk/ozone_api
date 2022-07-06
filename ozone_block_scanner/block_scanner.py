@@ -125,10 +125,10 @@ async def get_sender_puzzle_hash_of_cat_coin(parent_coin_spend: CoinSpend, coin:
             # print("using secondary")
 
         if receiver_puzzle_hash is not None:
-            address = encode_puzzle_hash(receiver_puzzle_hash, "txch")
+            address = encode_puzzle_hash(receiver_puzzle_hash, "xch")
             coin_name = coin.name.hex()
-            print(address)
-            print(coin_name)
+            # print(address)
+            # print(coin_name)
 
         return sender_puzzle_hash, receiver_puzzle_hash, std_hash(bytes(CAT_MOD))
 
