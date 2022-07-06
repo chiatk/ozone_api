@@ -12,7 +12,7 @@ from chia.rpc.full_node_rpc_client import FullNodeRpcClient
 from chia.util.bech32m import encode_puzzle_hash
 from chia.types.coin_spend import CoinSpend
 
-from ozone_block_scanner.block_scanner import scan_blocks_range, scanned_block_to_dict
+from ozone_block_scanner.block_scanner import CoinSpendType, scan_blocks_range, scanned_block_to_dict
 from ozoneapi.cat_data import CatData
 
 import ozoneapi.config as settings
@@ -150,18 +150,29 @@ class ChiaSync:
                     if ChiaSync.peak_broadcast_callback is not None:
                         asyncio.create_task(ChiaSync.peak_broadcast_callback(ChiaSync.peak()))
 
-                    result = await scan_blocks_range(ChiaSync.node_rpc_client, last_peak, ChiaSync.peak())
-                    result_cont = {}
-                    result_in_json = []
-                    for coin_result in result[0]:
-                        json_value = scanned_block_to_dict(coin_result)
-                        result_in_json.append(json_value)
-                        if coin_result.spend_type not in result_cont:
-                            result_cont[coin_result.spend_type] = 0
+                    # result = await scan_blocks_range(ChiaSync.node_rpc_client, last_peak, ChiaSync.peak())
+                    # result_cont = {}
+                    # result_in_json = []
+                    # for coin_result in result[0]:
+                    #     json_value = scanned_block_to_dict(coin_result)
+                    #     result_in_json.append(json_value)
+                    #     if coin_result.spend_type == CoinSpendType.cat and coin_result.inner_puzzle_hash is None:
+                    #         # Hay que revisar estos casos, en el caso que no se encuentre quien es que lo recibe, 
+                    #         # es necesario bucar en InnerPuzzleHash, para esto, tenemos que ir guardando los outer puzzle hash
+                    #         # que vamos conociendo, por ejemplo, en este caso, tenemos un inner y outer conocidos, de quien envia
+                    #         # la transaccion, de esta forma, es necesario que guardemos
+                    #         # coin_result.sender_inner_puzzle_hash como InnerPuzzleHash
+                    #         # y coin_result.coin_record.name() como OuterPuzzlehash
+                    #         # de esta forma en nuevas coins que sean del mismo OuterPuzzlehash, ya sabremos cual 
+                    #         # el inner que corresponde
+                    #         print("nft")
+                            
+                    #     if coin_result.spend_type not in result_cont:
+                    #         result_cont[coin_result.spend_type] = 0
                     
-                        result_cont[coin_result.spend_type] += 1
+                    #     result_cont[coin_result.spend_type] += 1
                     
-                    print(result_cont)
+                    # print(result_cont)
                     #print(result_in_json)
 
             except Exception as e:
