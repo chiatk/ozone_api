@@ -35,7 +35,7 @@ class ScannedBlock:
 
     def __init__(self,
                  coin_record: CoinRecord,
-                 coin_spend: CoinSpend,
+                 coin_spend: Optional[CoinSpend],
                  inner_puzzle_hash: bytes32,
                  outer_puzzle_hash: Optional[bytes32],
                  sender_inner_puzzle_hash: Optional[bytes32],
@@ -81,14 +81,23 @@ def scanned_block_to_dict(block_data: ScannedBlock):
     if block_data.sender_inner_puzzle_hash is not None:
         sender_inner_puzzle_hash = block_data.sender_inner_puzzle_hash
 
+    coin_spend_json = None
+    if block_data.coin_spend is not None:
+        coin_spend_json = block_data.coin_spend.to_json_dict()
+    
+    block_data_hex = None
+
+    if block_data.mod_hash is not None:
+        block_data_hex = block_data.mod_hash.hex()
+
     result_dict = {
         "coin_record": block_data.coin_record.to_json_dict(),
-        "coin_spend": block_data.coin_spend.to_json_dict(),
+        "coin_spend": coin_spend_json,
         "inner_puzzle_hash": block_data.inner_puzzle_hash.hex(),
         "outer_puzzle_hash": outer_puzzle_hash,
         "sender_inner_puzzle_hash": sender_inner_puzzle_hash,
         "coin_type": block_data.spend_type.value,
-        "mod_hash": block_data.mod_hash.hex(),
+        "mod_hash": block_data_hex,
         "coin_name": block_data.coin_name.hex(),
         "extra": extras,
         "did_id": did_id

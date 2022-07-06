@@ -12,7 +12,7 @@ from chia.rpc.full_node_rpc_client import FullNodeRpcClient
 from chia.util.bech32m import encode_puzzle_hash
 from chia.types.coin_spend import CoinSpend
 
-from ozone_block_scanner.block_scanner import scan_blocks_range
+from ozone_block_scanner.block_scanner import scan_blocks_range, scanned_block_to_dict
 from ozoneapi.cat_data import CatData
 
 import ozoneapi.config as settings
@@ -150,15 +150,19 @@ class ChiaSync:
                     if ChiaSync.peak_broadcast_callback is not None:
                         asyncio.create_task(ChiaSync.peak_broadcast_callback(ChiaSync.peak()))
 
-                    # result = await scan_blocks_range(ChiaSync.node_rpc_client, last_peak, ChiaSync.peak())
-                    # result_cont = {}
-                    # for coin_result in result[0]:
-                    #     if coin_result.spend_type not in result_cont:
-                    #         result_cont[coin_result.spend_type] = 0
-                    #
-                    #     result_cont[coin_result.spend_type] += 1
-                    #
-                    # print(result_cont)
+                    result = await scan_blocks_range(ChiaSync.node_rpc_client, last_peak, ChiaSync.peak())
+                    result_cont = {}
+                    result_in_json = []
+                    for coin_result in result[0]:
+                        json_value = scanned_block_to_dict(coin_result)
+                        result_in_json.append(json_value)
+                        if coin_result.spend_type not in result_cont:
+                            result_cont[coin_result.spend_type] = 0
+                    
+                        result_cont[coin_result.spend_type] += 1
+                    
+                    print(result_cont)
+                    #print(result_in_json)
 
             except Exception as e:
                 print(f"exception: {e}")
