@@ -45,7 +45,6 @@ class ScannedBlock:
                  extra: Optional[list],
                  did_id: Optional[bytes32],
                  ):
-
         self.coin_record = coin_record
         self.coin_spend = coin_spend
         self.inner_puzzle_hash = inner_puzzle_hash
@@ -112,24 +111,25 @@ async def get_sender_puzzle_hash_of_cat_coin(parent_coin_spend: CoinSpend, coin:
         receiver_puzzle_hash = None
         try:
             receiver_puzzle_hash = list(solution_arguments[0].rest().first().as_iter())[2].rest().first().as_python()
-            #print("using primary")
+            # print("using primary")
         except Exception:
-            try: 
-                receiver_puzzle_hash= solution_arguments[0].first().rest().first().first().atom
+            try:
+                receiver_puzzle_hash = solution_arguments[0].first().rest().first().first().atom
             except Exception:
-                hex_value = bytes(parent_coin_spend.solution).hex()
-                print("\n")
-                print(hex_value)
-                print("fail first and sencond")
+                pass
+                # hex_value = bytes(parent_coin_spend.solution).hex()
+                # print("\n")
+                # print(hex_value)
+                # print("fail first and sencond")
 
-            #print("using secondary")
-        
+            # print("using secondary")
+
         if receiver_puzzle_hash is not None:
             address = encode_puzzle_hash(receiver_puzzle_hash, "txch")
             coin_name = coin.name.hex()
             print(address)
             print(coin_name)
-             
+
         return sender_puzzle_hash, receiver_puzzle_hash, std_hash(bytes(CAT_MOD))
 
     return None
@@ -146,13 +146,12 @@ async def scan_addition_coin(coin_record: CoinRecord, node_client: FullNodeRpcCl
 
     spend_type: CoinSpendType = CoinSpendType.standard
     coin_name: Optional[bytes32] = coin_record.coin.name()
-    
+
     founded = False
 
     parent_coin: Optional[CoinRecord] = await node_client.get_coin_record_by_name(coin_record.coin.parent_coin_info)
     parent_coin_spend: Optional[CoinSpend] = None
     if parent_coin is not None:
-
         parent_coin_spend = await \
             node_client.get_puzzle_and_solution(parent_coin.coin.name(), parent_coin.spent_block_index)
 
@@ -163,8 +162,6 @@ async def scan_addition_coin(coin_record: CoinRecord, node_client: FullNodeRpcCl
         coin_spend = parent_coin_spend
         mod_hash = std_hash(bytes(mod))
 
-       
-
         if coin_record.confirmed_block_index >= MIN_CAT_BLOCK_HEIGHT:
             cat_puzzles = await get_sender_puzzle_hash_of_cat_coin(parent_coin_spend, coin_record)
             if cat_puzzles is not None:
@@ -174,10 +171,9 @@ async def scan_addition_coin(coin_record: CoinRecord, node_client: FullNodeRpcCl
                 inner_puzzle_hash = _inner_puzzle_hash
                 sender_inner_puzzle_hash = _sender_inner_puzzle_hash
 
-                if inner_puzzle_hash is None:
-                    print(f'Not found = {coin_record.coin.name().hex()}')
-                    print(f"Sender = {encode_puzzle_hash(_sender_inner_puzzle_hash, 'txch')}")
-                  
+                # if inner_puzzle_hash is None:
+                #     print(f'Not found = {coin_record.coin.name().hex()}')
+                #     print(f"Sender = {encode_puzzle_hash(_sender_inner_puzzle_hash, 'txch')}")
 
                 outer_puzzle_hash = coin_record.coin.puzzle_hash
                 mod_hash = _mod_hash
@@ -206,7 +202,7 @@ async def scan_addition_coin(coin_record: CoinRecord, node_client: FullNodeRpcCl
         inner_puzzle_hash = coin_record.coin.puzzle_hash
         if parent_coin is not None:
             sender_inner_puzzle_hash = parent_coin.coin.puzzle_hash
-    #print(f'Processing {spend_type.value} - {coin_record.coin.name()}')
+    # print(f'Processing {spend_type.value} - {coin_record.coin.name()}')
     return ScannedBlock(**{
         "coin_record": coin_record,
         "coin_spend": coin_spend,
