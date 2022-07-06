@@ -63,3 +63,12 @@ db_coin_record= {
       ]
   }
 }
+
+
+# Consultas
+
+# Obtener las todas las coins de un Inner Puzzlehash
+
+# Obtener todas las coins de un Innerhash en un rango de bloques
+
+# Obtener el estado de una coin, solo conocer si esta gastada o no
