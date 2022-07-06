@@ -109,6 +109,7 @@ class ChiaSync:
     state = None
     peak_broadcast_callback = None
     staking_data = {}
+    catkchi_wallets_data = {}
 
     @staticmethod
     def start(state):
@@ -145,6 +146,7 @@ class ChiaSync:
                     if last_peak == 0:
                         last_peak = ChiaSync.peak() - 5
                     asyncio.create_task(ChiaSync.check_staking_coins())
+                    asyncio.create_task(ChiaSync.check_catkchi_wallets())
                     if ChiaSync.peak_broadcast_callback is not None:
                         asyncio.create_task(ChiaSync.peak_broadcast_callback(ChiaSync.peak()))
 
@@ -168,6 +170,21 @@ class ChiaSync:
         for month in months:
             data = await get_staking_coins(ChiaSync.node_rpc_client, month)
             ChiaSync.staking_data[month] = data
+
+    @staticmethod
+    async def check_catkchi_wallets():
+        with open('catkchi_addresses.json') as json_file:
+            data = json.load(json_file)
+            for item in data:
+                puzzle_hash = bytes32(bytes.fromhex(item["cat_ph"]))
+                coins = await ChiaSync.node_rpc_client.get_coin_records_by_puzzle_hash(puzzle_hash, include_spent_coins=False)
+                balance = 0
+                for c in coins:
+                    coin: CoinRecord = c
+                    balance += coin.coin.amount
+                item['balance'] = balance / 1000
+
+            ChiaSync.catkchi_wallets_data = data
 
     @staticmethod
     async def load_tokens_loop():
