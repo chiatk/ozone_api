@@ -148,15 +148,15 @@ class ChiaSync:
                     if ChiaSync.peak_broadcast_callback is not None:
                         asyncio.create_task(ChiaSync.peak_broadcast_callback(ChiaSync.peak()))
 
-                    result = await scan_blocks_range(ChiaSync.node_rpc_client, last_peak, ChiaSync.peak())
-                    result_cont = {}
-                    for coin_result in result[0]:
-                        if coin_result.spend_type not in result_cont:
-                            result_cont[coin_result.spend_type] = 0
-                        
-                        result_cont[coin_result.spend_type] += 1
-                        
-                    print(result_cont)
+                    # result = await scan_blocks_range(ChiaSync.node_rpc_client, last_peak, ChiaSync.peak())
+                    # result_cont = {}
+                    # for coin_result in result[0]:
+                    #     if coin_result.spend_type not in result_cont:
+                    #         result_cont[coin_result.spend_type] = 0
+                    #
+                    #     result_cont[coin_result.spend_type] += 1
+                    #
+                    # print(result_cont)
 
             except Exception as e:
                 print(f"exception: {e}")
