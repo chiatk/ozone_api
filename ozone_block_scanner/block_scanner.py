@@ -66,7 +66,7 @@ async def scan_addition_coin(coin_record: CoinRecord, node_client: FullNodeRpcCl
     outer_puzzle_hash: Optional[bytes32] = None
     mod_hash: Optional[bytes32] = None
     did_id: Optional[bytes32] = None
-    extra = [] # can be NftInfo is NFT
+    extra = []# can be NftInfo is NFT
 
     spend_type: CoinSpendType = CoinSpendType.standard
     coin_name: Optional[bytes32] = coin_record.coin.name()
@@ -155,6 +155,7 @@ async def puzzle_hash_tracing(node_client: FullNodeRpcClient, start: int = 1, en
         for cr in additions:
             coin_record: CoinRecord = cr
             analyzer_result = await scan_addition_coin(coin_record, node_client)
+            processed_additions.append(analyzer_result)
 
         removals.extend(removals)
 
