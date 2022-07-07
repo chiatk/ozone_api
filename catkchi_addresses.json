@@ -1,6 +1,7 @@
 [
   {
     "name": "Main cold wallet",
+    "name_es": "Wallet principal en frío",
     "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
     "type": "month",
     "address": "xch1z3j0zuaruew983khs3wph4030v53s7797fg8wr5cpuf5l2az8hhsfdrwqf",
@@ -8,6 +9,7 @@
   },
   {
     "name": "Staking cold wallet",
+    "name_es": "Wallet de staking en frío",
     "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
     "type": "month",
     "address": "xch1jjfkctg7xpvmqmwr7dyddanhrup9380aptph39hxexpmz449uj8sp9uu7t",
@@ -15,6 +17,7 @@
   },
   {
     "name": "Staking hot wallet",
+    "name_es": "Wallet de staking en caliente",
     "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
     "type": "month",
     "address": "xch1jn8gva09ckyudwr4ykke0e8sr5fx2p4dqaa4veyguua38fccxy6q55rg4v",
@@ -22,6 +25,7 @@
   },
   {
     "name": "First month vesting",
+    "name_es": "Primer mes entrega en vesting",
     "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
     "type": "month",
     "address": "xch10m4tvx4v6u06jcmmcawclg60hdsgru4wx7rrn38vg3v38np9g94shwhtwe",
@@ -30,6 +34,7 @@
   },
   {
     "name": "Second month vesting",
+    "name_es": "Segundo mes entrega en vesting",
     "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
     "type": "month",
     "address": "xch10m4tvx4v6u06jcmmcawclg60hdsgru4wx7rrn38vg3v38np9g94shwhtwe",
@@ -38,6 +43,7 @@
   },
   {
     "name": "Third month vesting",
+    "name_es": "Tercer mes entrega en vesting",
     "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
     "type": "month",
     "address": "xch10m4tvx4v6u06jcmmcawclg60hdsgru4wx7rrn38vg3v38np9g94shwhtwe",
@@ -46,6 +52,7 @@
   },
   {
     "name": "Fourth month vesting",
+    "name_es": "Cuarto mes entrega en vesting",
     "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
     "type": "month",
     "address": "xch10m4tvx4v6u06jcmmcawclg60hdsgru4wx7rrn38vg3v38np9g94shwhtwe",
@@ -54,6 +61,7 @@
   },
   {
     "name": "Fifth month vesting",
+    "name_es": "Quinto mes entrega en vesting",
     "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
     "type": "month",
     "address": "xch10m4tvx4v6u06jcmmcawclg60hdsgru4wx7rrn38vg3v38np9g94shwhtwe",
@@ -62,6 +70,7 @@
   },
   {
     "name": "Sixth month vesting",
+    "name_es": "Sexto mes entrega en vesting",
     "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
     "type": "month",
     "address": "xch10m4tvx4v6u06jcmmcawclg60hdsgru4wx7rrn38vg3v38np9g94shwhtwe",
@@ -70,6 +79,7 @@
   },
   {
     "name": "Seventh month vesting",
+    "name_es": "Septimo mes entrega en vesting",
     "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
     "type": "month",
     "address": "xch10m4tvx4v6u06jcmmcawclg60hdsgru4wx7rrn38vg3v38np9g94shwhtwe",
@@ -78,6 +88,7 @@
   },
   {
     "name": "Eighth month vesting",
+    "name_es": "Octavo mes entrega en vesting",
     "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
     "type": "month",
     "address": "xch10m4tvx4v6u06jcmmcawclg60hdsgru4wx7rrn38vg3v38np9g94shwhtwe",
@@ -86,6 +97,7 @@
   },
   {
     "name": "Ninth month vesting",
+    "name_es": "Noveno mes entrega en vesting",
     "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
     "type": "month",
     "address": "xch10m4tvx4v6u06jcmmcawclg60hdsgru4wx7rrn38vg3v38np9g94shwhtwe",
@@ -94,6 +106,7 @@
   },
   {
     "name": "Tenth month vesting",
+    "name_es": "Decimo mes entrega en vesting",
     "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
     "type": "month",
     "address": "xch10m4tvx4v6u06jcmmcawclg60hdsgru4wx7rrn38vg3v38np9g94shwhtwe",
