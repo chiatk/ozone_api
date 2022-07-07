@@ -188,7 +188,7 @@ class ChiaSync:
 
     @staticmethod
     async def check_catkchi_wallets():
-        with open('catkchi_addresses.json') as json_file:
+        with open('catkchi_addresses.json', encoding='utf-8') as json_file:
             data = json.load(json_file)
             for item in data:
                 puzzle_hash = bytes32(bytes.fromhex(item["cat_ph"]))
