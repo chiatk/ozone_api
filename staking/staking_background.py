@@ -30,6 +30,8 @@ from chia.pools.pool_puzzles import (
 )
 import os, shutil, pathlib, fnmatch
 
+from ozone_block_scanner.block_scanner import get_sender_puzzle_hash_of_cat_coin
+
 def move_dir(src_path: str, dst_path: str):
     shutil.move(src_path, dst_path)
 
@@ -139,10 +141,52 @@ class StakingBackground:
         balance = await self.wallet_rpc_client.get_wallet_balance(self.wallet_id)
         amount = balance["spendable_balance"] /1000
         return amount
+    async def update_hot_wallet(self, address:str, cat_ph: bytes32, balance: int):
+        with open('catkchi_addresses.json', "r", encoding='utf-8') as json_file:
+            data = json.load(json_file)
+            updated = False
+            for item in data:
+                if item["type"] =='hot' and item["name"] == "Staking hot wallet":
+                    item["address"] = address
+                    item["cat_ph"] = cat_ph.hex()
+                    item["balance"] = balance
+                    updated = True
+                    break
+
+            if updated:
+                with open("catkchi_addresses.json", "w", encoding='utf-8') as jsonFile:
+                    json.dump(data, jsonFile, indent=4,  ensure_ascii=False)
+            
+
+
+
+
+    async def calc_hot_wallet(self):
+        balance = await self.spendable_balance()
+        coins = await self.wallet_rpc_client.select_coins(amount=balance*1000, wallet_id=self.wallet_id)
+        coins.sort(key=lambda x: int(x.amount), reverse=False)
+        if len(coins)>0:
+            biggest = coins[-1]
+            coin_record = await self.node_rpc_client.get_coin_record_by_name(biggest.name())
+            parent_coin: Optional[CoinRecord] = await self.node_rpc_client.get_coin_record_by_name(biggest.parent_coin_info)
+            parent_coin_spend: Optional[CoinSpend] = None
+            if parent_coin is not None:
+                parent_coin_spend = await \
+                    self.node_rpc_client.get_puzzle_and_solution(parent_coin.coin.name(), parent_coin.spent_block_index)
+                cat_puzzles = await get_sender_puzzle_hash_of_cat_coin(parent_coin_spend, coin_record)
+                if cat_puzzles is not None:
+                  
+                    _sender_inner_puzzle_hash, _, _mod_hash = cat_puzzles
+                    #address = encode_puzzle_hash(bytes32(_inner_puzzle_hash), "xch")
+                    address2 = encode_puzzle_hash(bytes32(_sender_inner_puzzle_hash), "xch")
+                    await self.update_hot_wallet(address2, biggest.puzzle_hash, int(biggest.amount)/1000)
+
+        print(coins)
     
     async def worker_loop(self):
         while(True):
             try:
+                await self.calc_hot_wallet()
                 wallet_synced = await self.wallet_rpc_client.get_synced()
                 if not wallet_synced:
                     print(f"Wallet not sync, waiting")
@@ -157,6 +201,8 @@ class StakingBackground:
                 print("sleep 1 hour....")
                 await asyncio.sleep(60*60)
             await asyncio.sleep(10)
+
+
 
     def get_confirmation_security_threshold(self):
         return 8
@@ -209,6 +255,9 @@ class StakingBackground:
         
             if(transaction_confirmed):
                await self.move_file_to_sent(coin_name)
+               await self.calc_hot_wallet()
+
+              
 
             
         else:
