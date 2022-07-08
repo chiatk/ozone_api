@@ -177,9 +177,9 @@ class StakingBackground:
                 if cat_puzzles is not None:
                   
                     _sender_inner_puzzle_hash, _, _mod_hash = cat_puzzles
-                    #address = encode_puzzle_hash(bytes32(_inner_puzzle_hash), "xch")
+                    address = encode_puzzle_hash(bytes32(biggest.puzzle_hash), "xch")
                     address2 = encode_puzzle_hash(bytes32(_sender_inner_puzzle_hash), "xch")
-                    await self.update_hot_wallet(address2, biggest.puzzle_hash, int(biggest.amount)/1000)
+                    await self.update_hot_wallet(address, biggest.puzzle_hash, int(biggest.amount)/1000)
 
         print(coins)
     
