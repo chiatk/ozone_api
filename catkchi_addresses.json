@@ -21,7 +21,8 @@
     "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
     "type": "hot",
     "address": "xch1jn8gva09ckyudwr4ykke0e8sr5fx2p4dqaa4veyguua38fccxy6q55rg4v",
-    "cat_ph": "356e1791f75c333639f933c88c5b7677eea1aa30c5acec957e3076443b84469c"
+    "cat_ph": "356e1791f75c333639f933c88c5b7677eea1aa30c5acec957e3076443b84469c",
+    "balance": 250.5
   },
   {
     "name": "First month vesting",

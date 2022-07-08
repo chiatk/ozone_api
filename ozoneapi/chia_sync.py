@@ -191,13 +191,14 @@ class ChiaSync:
         with open('catkchi_addresses.json', encoding='utf-8') as json_file:
             data = json.load(json_file)
             for item in data:
-                puzzle_hash = bytes32(bytes.fromhex(item["cat_ph"]))
-                coins = await ChiaSync.node_rpc_client.get_coin_records_by_puzzle_hash(puzzle_hash, include_spent_coins=False)
-                balance = 0
-                for c in coins:
-                    coin: CoinRecord = c
-                    balance += coin.coin.amount
-                item['balance'] = balance / 1000
+                if "balance" not in item:
+                    puzzle_hash = bytes32(bytes.fromhex(item["cat_ph"]))
+                    coins = await ChiaSync.node_rpc_client.get_coin_records_by_puzzle_hash(puzzle_hash, include_spent_coins=False)
+                    balance = 0
+                    for c in coins:
+                        coin: CoinRecord = c
+                        balance += coin.coin.amount
+                    item['balance'] = balance / 1000
 
             ChiaSync.catkchi_wallets_data = data
 
