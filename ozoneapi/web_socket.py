@@ -81,6 +81,7 @@ async def websocket_endpoint(websocket: WebSocket , client_id: str):
                 await websocket.send_text(json.dumps({"a": "hello"}))
 
             elif action == "close":
+                await websocket.close(code=1000)
                 break
           
             elif action == "add_puzzlehash"  :
@@ -185,19 +186,22 @@ async def websocket_endpoint(websocket: WebSocket , client_id: str):
                 except Exception as e:
                     print(e)
              
-        await websocket.close(code=200)
+        await websocket.close(code=1000)
     except Exception as e:
-        error_stack = traceback.format_exc()
-        print(f"Unexpected error in websocket_endpoint: {e} {error_stack}")
-        manager.disconnect(websocket)
-        items  = ChiaSync.puzzle_hashes.copy()
-        for key in items:
-            item = items[key]
-            clients_set = item["clients"]
-            if client_id in clients_set:
-                
-                ChiaSync.puzzle_hashes.pop(key)
-                print(f"Removed client {client_id} from puzzle {key}")
-              
+        try:
+            error_stack = traceback.format_exc()
+            print(f"Unexpected error in websocket_endpoint: {e} {error_stack}")
+            manager.disconnect(websocket)
+            items  = ChiaSync.puzzle_hashes.copy()
+            for key in items:
+                item = items[key]
+                clients_set = item["clients"]
+                if client_id in clients_set:
+                    
+                    ChiaSync.puzzle_hashes.pop(key)
+                    print(f"Removed client {client_id} from puzzle {key}")
+    
+        except Exception as e:
+            pass
 
         
