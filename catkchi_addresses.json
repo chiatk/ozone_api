@@ -20,9 +20,9 @@
         "name_es": "Wallet de staking en caliente",
         "assetId": "aa53978aaac154e32380aaf6322cd316696442248f1d15051007bc48b011694b",
         "type": "hot",
-        "address": "xch18966klgucgahpxse40zlmtpvq455wzpwspqazfs5e7995vd66ggs85awdm",
-        "cat_ph": "3975ab7d1cc23b709a19abc5fdac2c056947082e8041d12614cf8a5a31bad211",
-        "balance": 3846697.465
+        "address": "xch1v5k3pn6w43ft97w6t409lsfre7yxullgdxw2pvave8myjvwta8dsxcze6m",
+        "cat_ph": "652d10cf4eac52b2f9da5d5e5fc123cf886e7fe8699ca0b3acc9f64931cbe9db",
+        "balance": 3822670.739
     },
     {
         "name": "First month vesting",
