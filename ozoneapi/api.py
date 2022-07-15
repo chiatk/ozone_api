@@ -479,11 +479,18 @@ async def list_tokens(month: int, status: str, request: Request):
     include_spent_coins = True
 
     return await ChiaSync.get_staking_data(month, status)
+
+
 @router.get('/catkchi/wallets')
 async def list_wallets( request: Request):
-   
+    return ChiaSync.catkchi_wallets_data
 
-    return   ChiaSync.catkchi_wallets_data
+@router.get('/app/versions')
+async def list_wallets( request: Request):
+    with open('app_versions.json') as json_file:
+        data = json.load(json_file)
+        return data
+
 
 
 app.include_router(router, prefix="/v1.1")
