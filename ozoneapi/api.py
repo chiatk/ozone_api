@@ -367,10 +367,7 @@ async def query_balance(puzzle_hash, request: Request):
     return data
 
 
-@router.get('/active_versions')
-@cached(ttl=10, key_builder=lambda *args, **kwargs: f"active_versions:", alias='default')
-async def query_balance(request: Request):
-    return {"android": {"min": 40, "actual": 40}, "ios": {"min": 40, "actual": 41}}
+ 
 
 
 @router.post('/get_coins_by_names')
@@ -486,6 +483,7 @@ async def list_wallets( request: Request):
     return ChiaSync.catkchi_wallets_data
 
 @router.get('/app/versions')
+@cached(ttl=500, key_builder=lambda *args, **kwargs: f"versions:", alias='default')
 async def list_wallets( request: Request):
     with open('app_versions.json') as json_file:
         data = json.load(json_file)
