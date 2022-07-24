@@ -30,8 +30,25 @@ async def get_full_node_client() -> FullNodeRpcClient:
 
 
 def transaction_processed(coin_name: str):
-    return os.path.exists(f"./delivers/sent/{coin_name}.json") or os.path.exists(
+    exist = os.path.exists(f"./delivers/sent/{coin_name}.json") or os.path.exists(
         f"./delivers/active/{coin_name}.json") or os.path.exists(f"./delivers/fails/{coin_name}.json")
+    if not exist:
+        return None
+    
+    try:
+        if os.path.exists(f"./delivers/sent/{coin_name}.json"):
+            with open(f"./delivers/sent/{coin_name}.json") as json_file:
+                data = json.load(json_file)
+                return data
+        if os.path.exists(f"./delivers/active/{coin_name}.json"):
+            with open(f"./delivers/active/{coin_name}.json") as json_file:
+                data = json.load(json_file)
+                return data
+    except Exception:
+            return None
+
+    
+    return None
 
 
 async def get_staking_coins(full_node_client: FullNodeRpcClient, month: int) -> List:
@@ -56,9 +73,8 @@ async def get_staking_coins(full_node_client: FullNodeRpcClient, month: int) -> 
         from ozoneapi.cat_utils import get_sender_puzzle_hash_of_cat_coin
         for item in records:
             coin_record: CoinRecord = item
-            if transaction_processed(coin_record.name.hex()):
-                # print(f"Coin already sent {coin_record.name.hex()}")
-                continue
+            processed = transaction_processed(coin_record.name.hex())
+             
 
             puzzle_hash: Optional[bytes32] = await get_sender_puzzle_hash_of_cat_coin(coin_record, full_node_client)
 
@@ -91,7 +107,7 @@ async def get_staking_coins(full_node_client: FullNodeRpcClient, month: int) -> 
                                        "withdrawal_date_time": payment_date_time.strftime("%Y-%m-%d %H:%M:%S"),
                                        "create_date_time": create_date_time.strftime("%Y-%m-%d %H:%M:%S"),
                                        "amount": float(amount),
-                                       "posible_withdrawal": float(posible_payment)}])
+                                       "posible_withdrawal": float('{0:.3f}'.format(float(posible_payment))), "processed":processed}])
 
         return result
 
@@ -150,30 +166,7 @@ class ChiaSync:
                     if ChiaSync.peak_broadcast_callback is not None:
                         asyncio.create_task(ChiaSync.peak_broadcast_callback(ChiaSync.peak()))
 
-                    # result = await scan_blocks_range(ChiaSync.node_rpc_client, last_peak, ChiaSync.peak())
-                    # result_cont = {}
-                    # result_in_json = []
-                    # for coin_result in result[0]:
-                    #     json_value = scanned_block_to_dict(coin_result)
-                    #     result_in_json.append(json_value)
-                    #     if coin_result.spend_type == CoinSpendType.cat and coin_result.inner_puzzle_hash is None:
-                    #         # Hay que revisar estos casos, en el caso que no se encuentre quien es que lo recibe, 
-                    #         # es necesario bucar en InnerPuzzleHash, para esto, tenemos que ir guardando los outer puzzle hash
-                    #         # que vamos conociendo, por ejemplo, en este caso, tenemos un inner y outer conocidos, de quien envia
-                    #         # la transaccion, de esta forma, es necesario que guardemos
-                    #         # coin_result.sender_inner_puzzle_hash como InnerPuzzleHash
-                    #         # y coin_result.coin_record.name() como OuterPuzzlehash
-                    #         # de esta forma en nuevas coins que sean del mismo OuterPuzzlehash, ya sabremos cual 
-                    #         # el inner que corresponde
-                    #         print("nft")
-                            
-                    #     if coin_result.spend_type not in result_cont:
-                    #         result_cont[coin_result.spend_type] = 0
-                    
-                    #     result_cont[coin_result.spend_type] += 1
-                    
-                    # print(result_cont)
-                    #print(result_in_json)
+                   
 
             except Exception as e:
                 print(f"exception: {e}")
@@ -275,15 +268,27 @@ class ChiaSync:
 
     @staticmethod
     async def get_staking_data(month: int, state: int):
+        data = []
         if month in ChiaSync.staking_data:
+            
 
             if ChiaSync.staking_data[month] is not None:
-                return ChiaSync.staking_data[month]
+                data = ChiaSync.staking_data[month]
+            else:
+                data = await get_staking_coins(ChiaSync.node_rpc_client, month)
+                ChiaSync.staking_data[month] = data
 
-        data = await get_staking_coins(ChiaSync.node_rpc_client, month)
-
-        ChiaSync.staking_data[month] = data
-        return data
+            result_list = []
+            if state == "1":
+                result_list = list(filter(lambda x: (x[1]["processed"] is   None), data)) 
+                print("actives")
+                print(len(result_list))
+            else:
+                result_list = list(filter(lambda x: (x[1]["processed"] is not None), data)) 
+                print("Proccesed")
+                print(len(result_list))
+            return result_list
+  
 
     @staticmethod
     def close():

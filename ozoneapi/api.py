@@ -473,9 +473,39 @@ async def list_tokens():
 
 @router.get('/staking/{month}/{status}')
 async def list_tokens(month: int, status: str, request: Request):
-    include_spent_coins = True
+   
 
     return await ChiaSync.get_staking_data(month, status)
+@router.get('/staking/summary')
+async def list_tokens(  request: Request):
+    months = [1,3,6,12]
+    states = ["0", "1"]
+    result = {"actives":{"buys":0, "earn":0}, "sent":{"buys":0, "earn":0}}
+
+    for m in months:
+        for status in states:
+            data= await ChiaSync.get_staking_data(m, status)
+            if data is None:
+                continue
+            
+            for item in data:
+                
+                amount_put = item[1]["amount"]
+                earn =  (item[1]["posible_withdrawal"] -  amount_put)
+
+                if(status =="0"):
+                   
+                    result["sent"]["buys"] += amount_put
+                    result["sent"]["earn"] += earn
+                else:
+                    
+                    result["actives"]["buys"] += amount_put
+                    result["actives"]["earn"] += earn
+    result["sent"]["total"] = result["sent"]["buys"] + result["sent"]["earn"]
+    result["actives"]["total"] = result["actives"]["buys"] + result["actives"]["earn"]
+   
+    return result
+    
 
 
 @router.get('/catkchi/wallets')
